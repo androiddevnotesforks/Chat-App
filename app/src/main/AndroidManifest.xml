@@ -13,6 +13,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ChatApp">
         <activity
+            android:name=".ui.signIn.SignInActivity"
+            android:exported="false"
+            android:label="@string/title_activity_sign_in"
+            android:theme="@style/Theme.ChatApp" />
+        <activity
             android:name=".ui.signUp.SignUpActivity"
             android:exported="true"
             android:label="@string/title_activity_sign_up"
@@ -27,9 +32,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.ChatApp.NoActionBar">
-
-        </activity>
+            android:theme="@style/Theme.ChatApp.NoActionBar"></activity>
     </application>
 
 </manifest>

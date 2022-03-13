@@ -44,14 +44,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val text = "ad"
         setContent {
             ChatAppTheme {
                 // A surface container using the 'background' color from the theme
-                Surface(color = MaterialTheme.colors.background) {
-                    MainLayout()
-
-                }
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colors.background
+                ) { MainLayout() }
             }
         }
     }
@@ -93,7 +92,6 @@ fun MainLayout(modifier: Modifier = Modifier){
             TopAppBar(
                 title ={ Text(text = "Chat") }
             )
-            Log.e("text","inside top bar")
         }
     ) {
         ConstraintLayout{

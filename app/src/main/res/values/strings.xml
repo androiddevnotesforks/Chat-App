@@ -6,7 +6,7 @@
     <string name="email_title">Email</string>
     <string name="password_title">Password</string>
     <string name="confirm_password_title">Confirm password</string>
-    <string name="empty"/>
+    <string name="empty" />
     <string name="empty_message">Field cannot be empty</string>
     <string name="invalid_name_message">Invalid name</string>
     <string name="invalid_password_message">Invalid password</string>
@@ -14,4 +14,7 @@
     <string name="password_short_message">Should be at least 8 character</string>
     <string name="password_not_same_message">Do not match</string>
     <string name="invalid_email_message">Invalid email</string>
+    <string name="email_exist_message">This email already exist</string>
+    <string name="title_activity_sign_in">SignInActivity</string>
+    <string name="success_sign_up">Sign up succeed</string>
 </resources>

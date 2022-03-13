@@ -2,7 +2,7 @@ package com.devwarex.chatapp.ui.signUp
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -16,6 +16,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -27,7 +28,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.devwarex.chatapp.MainActivity
 import com.devwarex.chatapp.R
 import com.devwarex.chatapp.ui.theme.ChatAppTheme
-import com.devwarex.chatapp.viewModels.SignUpViewModel
+import com.google.gson.Gson
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -61,6 +62,7 @@ class SignUpActivity : ComponentActivity() {
 @Composable
 fun SignUpScreen(modifier: Modifier = Modifier){
     val viewModel = hiltViewModel<SignUpViewModel>()
+    val (name,email,password,confirmPassword,isLoading,isSucceed,errors) = viewModel.uiState.collectAsState().value
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -85,22 +87,40 @@ fun SignUpScreen(modifier: Modifier = Modifier){
         Spacer(modifier = modifier.height(32.dp))
         NameEditText(
             modifier = modifier.align(Alignment.CenterHorizontally),
-            viewModel = viewModel
+            viewModel = viewModel,
+            name = name,
+            enable = !isSucceed,
+            nameError = errors.name
         )
         Spacer(modifier = modifier.height(16.dp))
-        EmailEditText(modifier = modifier, viewModel = viewModel)
-        Spacer(modifier = modifier.height(16.dp))
-        PasswordEditText(modifier = modifier, viewModel = viewModel)
-        Spacer(modifier = modifier.height(16.dp))
-        ConfirmPasswordEditText(modifier = modifier, viewModel = viewModel)
-        Spacer(modifier = Modifier.height(48.dp))
-        val isLoading = remember {
-            viewModel.isLoading
-        }
-        val loading = isLoading.collectAsState().value
-        SignUpLoadingState(
-            isLoading = loading,
+        EmailEditText(
+            modifier = modifier,
             viewModel = viewModel,
+            email = email,
+            enable = !isSucceed,
+            emailError = errors.email
+        )
+        Spacer(modifier = modifier.height(16.dp))
+        PasswordEditText(
+            modifier = modifier,
+            viewModel = viewModel,
+            password = password,
+            enable = !isSucceed,
+            passwordError = errors.password
+        )
+        Spacer(modifier = modifier.height(16.dp))
+        ConfirmPasswordEditText(
+            modifier = modifier,
+            viewModel = viewModel,
+            confirmPassword = confirmPassword,
+            enable = !isSucceed,
+            error = errors.confirmPassword
+        )
+        Spacer(modifier = Modifier.height(48.dp))
+        SignUpLoadingState(
+            isLoading = isLoading,
+            viewModel = viewModel,
+            enable = !isSucceed,
             modifier = modifier
                 .align(Alignment.CenterHorizontally)
                 .padding(top = 16.dp, bottom = 16.dp)
@@ -110,33 +130,40 @@ fun SignUpScreen(modifier: Modifier = Modifier){
 
 
 @Composable
-fun SignUpLoadingState(isLoading: Boolean,modifier: Modifier,viewModel: SignUpViewModel){
-    if (isLoading) {
-       CircularProgressIndicator(modifier = modifier)
+fun SignUpLoadingState(isLoading: Boolean,modifier: Modifier,viewModel: SignUpViewModel,enable: Boolean){
+    if (enable) {
+        if (isLoading) {
+            CircularProgressIndicator(modifier = modifier)
+        } else {
+            Button(
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = MaterialTheme.colors.secondary
+                ),
+                onClick = { viewModel.signUp() },
+                modifier = modifier
+                    .fillMaxWidth()
+                    .requiredHeight(48.dp)
+                    .padding(end = 24.dp, start = 24.dp)
+            ) {
+                Text(text = stringResource(id = R.string.sign_up_title))
+            }
+        }
     }else{
-        Button(
-            colors = ButtonDefaults.buttonColors(
-                backgroundColor = MaterialTheme.colors.secondary
-            ),
-            onClick = { viewModel.signUp() },
-            modifier = modifier
-                .fillMaxWidth()
-                .requiredHeight(48.dp)
-                .padding(end = 24.dp, start = 24.dp)
+        Snackbar(
+            backgroundColor = Color.Cyan
         ) {
-            Text(text = stringResource(id = R.string.sign_up_title))
+            Text(text = stringResource(id = R.string.success_sign_up))
         }
     }
 }
 @Composable
-fun NameEditText(modifier: Modifier,viewModel: SignUpViewModel){
-    val name = viewModel.name.collectAsState()
-    val message = viewModel.nameMessage.collectAsState().value
+fun NameEditText(modifier: Modifier,viewModel: SignUpViewModel,name: String,nameError: ErrorsState,enable: Boolean){
     Column {
         OutlinedTextField(
-            value = name.value,
+            value = name,
             onValueChange = viewModel::updateName,
             singleLine = true,
+            enabled = enable,
             colors = TextFieldDefaults.textFieldColors(
                 textColor = MaterialTheme.colors.onSurface,
                 backgroundColor = MaterialTheme.colors.background
@@ -146,11 +173,15 @@ fun NameEditText(modifier: Modifier,viewModel: SignUpViewModel){
                 .padding(end = 16.dp, start = 16.dp),
             label = { Text(text = stringResource(id = R.string.name_title)) },
             placeholder = { Text(text = stringResource(id = R.string.name_title)) },
-            isError = message != R.string.empty
+            isError = nameError != ErrorsState.NONE
         )
-        if (message != R.string.empty) {
+        if (nameError != ErrorsState.NONE) {
             Text(
-                text = stringResource(id = message),
+                text = stringResource(id = when(nameError){
+                    ErrorsState.EMPTY -> R.string.empty_message
+                    ErrorsState.INVALID_NAME -> R.string.invalid_name_message
+                    else -> R.string.empty
+                }),
                 color = MaterialTheme.colors.error,
                 style = MaterialTheme.typography.caption,
                 modifier = Modifier.padding(start = 24.dp)
@@ -160,14 +191,13 @@ fun NameEditText(modifier: Modifier,viewModel: SignUpViewModel){
 }
 
 @Composable
-fun EmailEditText(modifier: Modifier,viewModel: SignUpViewModel){
-    val email = viewModel.email.collectAsState()
-    val message = viewModel.emailMessage.collectAsState().value
+fun EmailEditText(modifier: Modifier,viewModel: SignUpViewModel,email: String,emailError: ErrorsState,enable: Boolean){
     Column {
         OutlinedTextField(
-            value = email.value,
+            value = email,
             onValueChange = viewModel::updateEmail,
             singleLine = true,
+            enabled = enable,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             colors = TextFieldDefaults.textFieldColors(
                 textColor = MaterialTheme.colors.onSurface,
@@ -178,11 +208,16 @@ fun EmailEditText(modifier: Modifier,viewModel: SignUpViewModel){
                 .padding(end = 16.dp, start = 16.dp),
             label = { Text(text = stringResource(id = R.string.email_title)) },
             placeholder = { Text(text = stringResource(id = R.string.email_title)) },
-            isError = message != R.string.empty
+            isError = emailError != ErrorsState.NONE
         )
-        if (message != R.string.empty) {
+        if (emailError != ErrorsState.NONE) {
             Text(
-                text = stringResource(id = message),
+                text = stringResource(id = when(emailError){
+                    ErrorsState.EMPTY -> R.string.empty_message
+                    ErrorsState.INVALID_EMAIL -> R.string.invalid_email_message
+                    ErrorsState.EMAIL_EXIST -> R.string.email_exist_message
+                    else -> R.string.empty
+                }),
                 color = MaterialTheme.colors.error,
                 style = MaterialTheme.typography.caption,
                 modifier = Modifier.padding(start = 24.dp)
@@ -192,15 +227,15 @@ fun EmailEditText(modifier: Modifier,viewModel: SignUpViewModel){
 }
 
 @Composable
-fun PasswordEditText(modifier: Modifier,viewModel: SignUpViewModel){
-    val password = viewModel.password.collectAsState()
-    val message = viewModel.passwordMessage.collectAsState().value
+fun PasswordEditText(modifier: Modifier,viewModel: SignUpViewModel,password: String,passwordError: ErrorsState,enable: Boolean){
+
     Column {
         OutlinedTextField(
-            value = password.value,
+            value = password,
             onValueChange = viewModel::updatePassword,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             singleLine = true,
+            enabled = enable,
             visualTransformation = PasswordVisualTransformation(),
             colors = TextFieldDefaults.textFieldColors(
                 textColor = MaterialTheme.colors.onSurface,
@@ -211,11 +246,15 @@ fun PasswordEditText(modifier: Modifier,viewModel: SignUpViewModel){
                 .padding(end = 16.dp, start = 16.dp),
             label = { Text(text = stringResource(id = R.string.password_title)) },
             placeholder = { Text(text = stringResource(id = R.string.password_title)) },
-            isError = message != R.string.empty
+            isError = passwordError != ErrorsState.NONE
         )
-        if (message != R.string.empty) {
+        if (passwordError != ErrorsState.NONE) {
             Text(
-                text = stringResource(id = message),
+                text = stringResource(id = when(passwordError){
+                    ErrorsState.EMPTY -> R.string.empty_message
+                    ErrorsState.WEAK_PASSWORD -> R.string.password_weak_message
+                    else -> R.string.empty
+                }),
                 color = MaterialTheme.colors.error,
                 style = MaterialTheme.typography.caption,
                 modifier = Modifier.padding(start = 24.dp)
@@ -225,14 +264,19 @@ fun PasswordEditText(modifier: Modifier,viewModel: SignUpViewModel){
 }
 
 @Composable
-fun ConfirmPasswordEditText(modifier: Modifier,viewModel: SignUpViewModel){
-    val password = viewModel.confirmPassword.collectAsState()
-    val message = viewModel.confirmPasswordMessage.collectAsState().value
+fun ConfirmPasswordEditText(
+    modifier: Modifier,
+    viewModel: SignUpViewModel,
+    confirmPassword: String,
+    error: ErrorsState,
+    enable: Boolean
+){
     Column {
         OutlinedTextField(
-            value = password.value,
+            value = confirmPassword,
             onValueChange = viewModel::updateConfirmPassword,
             singleLine = true,
+            enabled = enable,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             visualTransformation = PasswordVisualTransformation(),
             colors = TextFieldDefaults.textFieldColors(
@@ -244,11 +288,15 @@ fun ConfirmPasswordEditText(modifier: Modifier,viewModel: SignUpViewModel){
                 .padding(end = 16.dp, start = 16.dp),
             label = { Text(text = stringResource(id = R.string.confirm_password_title)) },
             placeholder = { Text(text = stringResource(id = R.string.confirm_password_title)) },
-            isError = message != R.string.empty
+            isError = error != ErrorsState.NONE
         )
-        if (message != R.string.empty) {
+        if ( error != ErrorsState.NONE) {
             Text(
-                text = stringResource(id = message),
+                text = stringResource(id = when(error){
+                    ErrorsState.EMPTY -> R.string.empty_message
+                    ErrorsState.NOT_MATCH_PASSWORD -> R.string.password_not_same_message
+                    else -> R.string.empty
+                }),
                 color = MaterialTheme.colors.error,
                 style = MaterialTheme.typography.caption,
                 modifier = Modifier.padding(start = 24.dp)
