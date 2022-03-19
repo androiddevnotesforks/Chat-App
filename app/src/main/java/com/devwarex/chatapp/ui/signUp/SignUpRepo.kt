@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.compose.runtime.MutableState
 import androidx.lifecycle.MutableLiveData
 import com.devwarex.chatapp.models.UserModel
+import com.devwarex.chatapp.repos.UpdateTokenRepo
 import com.devwarex.chatapp.utility.Paths
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.ktx.auth
@@ -23,19 +24,21 @@ class SignUpRepo @Inject constructor() {
     private val auth = Firebase.auth
     val isSucceed = MutableLiveData(false)
     fun signUp(elementState: SignUpUiState){
-        _uiState.value = elementState.copy(isLoading = true, errors = SignUpErrors(
-            email = SignUpUtility.emailError(email = elementState.email),
-            name = SignUpUtility.nameError(name = elementState.name),
-            password = SignUpUtility.passwordError(
-                password = elementState.password,
-                name = elementState.name,
-                email = elementState.email
-            ),
-            confirmPassword = SignUpUtility.confirmPasswordError(
-                password = elementState.password,
-                confirmPassword = elementState.confirmPassword
+        _uiState.value = elementState.copy(
+            isLoading = true,
+            errors = SignUpErrors(
+                email = SignUpUtility.emailError(email = elementState.email),
+                name = SignUpUtility.nameError(name = elementState.name),
+                password = SignUpUtility.passwordError(
+                    password = elementState.password,
+                    name = elementState.name,
+                    email = elementState.email
+                ),
+                confirmPassword = SignUpUtility.confirmPasswordError(
+                    password = elementState.password,
+                    confirmPassword = elementState.confirmPassword
+                )
             )
-        )
         )
         if (SignUpUtility.isDataValid(_uiState.value.errors)) {
             registerUser(elementState = _uiState.value)
@@ -52,6 +55,7 @@ class SignUpRepo @Inject constructor() {
                if (it.isSuccessful){
                    val user = auth.currentUser
                    if (user != null){
+                       UpdateTokenRepo.updateToken()
                        _uiState.value = elementState.copy(isSucceedToSignUp = true, isLoading = false)
                        saveUser(user.uid,elementState)
                    }

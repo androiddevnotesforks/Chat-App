@@ -2,6 +2,8 @@ package com.devwarex.chatapp.ui.signUp
 
 import android.content.Intent
 import android.os.Bundle
+import android.provider.CalendarContract
+import android.text.style.BackgroundColorSpan
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -27,7 +29,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.devwarex.chatapp.MainActivity
 import com.devwarex.chatapp.R
+import com.devwarex.chatapp.ui.theme.Blue200
 import com.devwarex.chatapp.ui.theme.ChatAppTheme
+import com.devwarex.chatapp.ui.theme.DarkBackground
+import com.devwarex.chatapp.ui.theme.LightBlue
 import com.google.gson.Gson
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -130,7 +135,12 @@ fun SignUpScreen(modifier: Modifier = Modifier){
 
 
 @Composable
-fun SignUpLoadingState(isLoading: Boolean,modifier: Modifier,viewModel: SignUpViewModel,enable: Boolean){
+fun SignUpLoadingState(
+    isLoading: Boolean,
+    modifier: Modifier,
+    viewModel: SignUpViewModel,
+    enable: Boolean
+){
     if (enable) {
         if (isLoading) {
             CircularProgressIndicator(modifier = modifier)
@@ -150,14 +160,20 @@ fun SignUpLoadingState(isLoading: Boolean,modifier: Modifier,viewModel: SignUpVi
         }
     }else{
         Snackbar(
-            backgroundColor = Color.Cyan
+            backgroundColor = LightBlue
         ) {
-            Text(text = stringResource(id = R.string.success_sign_up))
+            Text(text = stringResource(id = R.string.success_sign_up),color = DarkBackground)
         }
     }
 }
 @Composable
-fun NameEditText(modifier: Modifier,viewModel: SignUpViewModel,name: String,nameError: ErrorsState,enable: Boolean){
+fun NameEditText(
+    modifier: Modifier,
+    viewModel: SignUpViewModel,
+    name: String,
+    nameError: ErrorsState,
+    enable: Boolean
+){
     Column {
         OutlinedTextField(
             value = name,
@@ -191,7 +207,13 @@ fun NameEditText(modifier: Modifier,viewModel: SignUpViewModel,name: String,name
 }
 
 @Composable
-fun EmailEditText(modifier: Modifier,viewModel: SignUpViewModel,email: String,emailError: ErrorsState,enable: Boolean){
+fun EmailEditText(
+    modifier: Modifier,
+    viewModel: SignUpViewModel,
+    email: String,
+    emailError: ErrorsState,
+    enable: Boolean
+){
     Column {
         OutlinedTextField(
             value = email,
@@ -227,7 +249,13 @@ fun EmailEditText(modifier: Modifier,viewModel: SignUpViewModel,email: String,em
 }
 
 @Composable
-fun PasswordEditText(modifier: Modifier,viewModel: SignUpViewModel,password: String,passwordError: ErrorsState,enable: Boolean){
+fun PasswordEditText(
+    modifier: Modifier,
+    viewModel: SignUpViewModel,
+    password: String,
+    passwordError: ErrorsState,
+    enable: Boolean
+){
 
     Column {
         OutlinedTextField(

@@ -4,5 +4,6 @@ class Paths {
 
     companion object{
         const val USERS: String = "users"
+        const val TOKENS: String = "tokens"
     }
 }
