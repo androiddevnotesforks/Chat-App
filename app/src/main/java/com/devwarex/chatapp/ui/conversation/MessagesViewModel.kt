@@ -1,4 +1,4 @@
-package com.devwarex.chatapp
+package com.devwarex.chatapp.ui.conversation
 
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.LiveData
