@@ -3,16 +3,13 @@ package com.devwarex.chatapp.ui.conversation
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.devwarex.chatapp.ui.theme.ChatAppTheme
@@ -23,11 +20,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.rememberImagePainter
 import com.devwarex.chatapp.R
 import com.devwarex.chatapp.db.Message
-import com.devwarex.chatapp.models.MessageModel
-import com.devwarex.chatapp.ui.theme.DarkBlue
 import com.devwarex.chatapp.ui.theme.LightBlack
 import com.devwarex.chatapp.ui.theme.LightBlue
 import dagger.hilt.android.AndroidEntryPoint
@@ -73,23 +67,24 @@ fun MainLayoutScreen(modifier: Modifier = Modifier){
     ) {
         ConstraintLayout{
             val ( list , edit ) = createRefs()
-            if(uid.isNotEmpty()) {
-                LazyColumn(
-                    modifier = modifier
-                        .fillMaxHeight()
-                        .constrainAs(list) {
-                            top.linkTo(parent.top)
-                            bottom.linkTo(edit.top)
-                            height = Dimension.preferredWrapContent
-                        }
-                        .fillMaxWidth(),
-                    reverseLayout = true
-                ) {
+            LazyColumn(
+                modifier = modifier
+                    .fillMaxHeight()
+                    .constrainAs(list) {
+                        top.linkTo(parent.top)
+                        bottom.linkTo(edit.top)
+                        height = Dimension.preferredWrapContent
+                    }
+                    .fillMaxWidth(),
+                reverseLayout = true
+            ) {
+                if (uid.isNotEmpty()) {
                     items(messages) {
                         MainMessageCard(msg = it, uid = uid)
                     }
                 }
             }
+
             Row(modifier = modifier
                 .constrainAs(edit) {
                     end.linkTo(parent.end)

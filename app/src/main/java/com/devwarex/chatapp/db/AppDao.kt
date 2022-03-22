@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.Flow
 interface AppDao {
 
 
-    @Query("select * from chat_messages_table")
+    @Query("select * from chat_messages_table order by timestamp desc")
     fun getMessages(): Flow<List<Message>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

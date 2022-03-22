@@ -27,10 +27,11 @@ class ConversationRepo @Inject constructor(
     private var currentUser: UserModel? = null
     private val _uiState = MutableStateFlow<MessageUiState>(MessageUiState())
     val uiState: StateFlow<MessageUiState> get() = _uiState
-
+    private var token: String = ""
     init {
         repo.sync("")
         userRepo.getUser(Firebase.auth.uid ?: "")
+        userRepo.getTokenByUserId(Firebase.auth.uid ?: "")
         CoroutineScope(Dispatchers.Unconfined).launch {
             launch {
                 userRepo.user.receiveAsFlow().collect {
@@ -41,6 +42,8 @@ class ConversationRepo @Inject constructor(
             launch { database.getMessages().collect { _uiState.value = _uiState.value.copy(messages = it) } }
 
             launch { sendMessageRepo.isLoading.receiveAsFlow().collect { _uiState.value = _uiState.value.copy(isLoading = it, enable = !it) } }
+
+            launch { userRepo.token.receiveAsFlow().collect { token = it } }
         }
     }
 
@@ -49,7 +52,9 @@ class ConversationRepo @Inject constructor(
             sendMessageRepo.sendTextMessage(
                 uid = currentUser?.uid ?: "",
                 name = currentUser?.name ?: "",
-                text = text
+                text = text,
+                chatId = "",
+                token = token
             )
         }
     }

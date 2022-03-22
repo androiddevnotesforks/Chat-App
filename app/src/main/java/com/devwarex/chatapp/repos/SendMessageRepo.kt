@@ -1,6 +1,8 @@
 package com.devwarex.chatapp.repos
 
 import com.devwarex.chatapp.models.MessageModel
+import com.devwarex.chatapp.models.MessageNotificationModel
+import com.devwarex.chatapp.models.MessageNotifyDataModel
 import com.devwarex.chatapp.utility.MessageType
 import com.devwarex.chatapp.utility.Paths
 import com.google.firebase.firestore.ktx.firestore
@@ -15,7 +17,7 @@ class SendMessageRepo @Inject constructor() {
     private val db = Firebase.firestore
     val isLoading = Channel<Boolean>()
     private val job = CoroutineScope(Dispatchers.Unconfined)
-    fun sendTextMessage(uid: String,text: String,name: String){
+    fun sendTextMessage(chatId: String,uid: String,text: String,name: String,token: String){
         job.launch { isLoading.send(true) }
         db.collection(Paths.MESSAGES)
             .add(
@@ -25,7 +27,19 @@ class SendMessageRepo @Inject constructor() {
                     body = text,
                     name = name
                 )
-            ).addOnCompleteListener { job.launch { isLoading.send(!it.isSuccessful) } }
+            ).addOnCompleteListener { job.launch {
+                isLoading.send(!it.isSuccessful) }
+                PushNotificationRepo.push(
+                    fcm = MessageNotificationModel(
+                        to = token,
+                        data = MessageNotifyDataModel(
+                            title = name,
+                            id = chatId,
+                            body = if (text.length > 15) text.take(15)+"..." else text
+                        )
+                    )
+                )
+            }
             .addOnFailureListener { job.launch { isLoading.send(false) } }
     }
 }

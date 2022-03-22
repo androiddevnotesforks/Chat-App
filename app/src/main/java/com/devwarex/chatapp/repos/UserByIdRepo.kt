@@ -13,10 +13,11 @@ import javax.inject.Inject
 
 class UserByIdRepo @Inject constructor() {
 
-
+    private val db = Firebase.firestore
     val user = Channel<UserModel>(Channel.UNLIMITED)
+    val token = Channel<String>(Channel.UNLIMITED)
     fun getUser(uid: String){
-        Firebase.firestore.collection(Paths.USERS)
+        db.collection(Paths.USERS)
             .document(uid)
             .get(Source.SERVER)
             .addOnCompleteListener { task ->
@@ -28,5 +29,18 @@ class UserByIdRepo @Inject constructor() {
                     }
                 }
             }
+    }
+
+
+    fun getTokenByUserId(uid: String){
+        db.collection(Paths.TOKENS)
+            .document(uid)
+            .get(Source.SERVER)
+            .addOnCompleteListener { CoroutineScope(Dispatchers.Unconfined).launch {
+                val t: String = it.result.get("token").toString()
+                if (t != "null"){
+                    token.send(t)
+                }
+            } }
     }
 }
