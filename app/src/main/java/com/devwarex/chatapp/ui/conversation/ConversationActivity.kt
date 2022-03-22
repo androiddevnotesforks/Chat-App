@@ -1,7 +1,6 @@
 package com.devwarex.chatapp.ui.conversation
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.*
@@ -9,7 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -17,26 +16,21 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.devwarex.chatapp.ui.theme.ChatAppTheme
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Color.Companion.Black
-import androidx.compose.ui.graphics.Color.Companion.LightGray
-import androidx.compose.ui.graphics.painter.BitmapPainter
-import androidx.compose.ui.layout.*
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-
-import androidx.compose.ui.unit.Dp
-import androidx.constraintlayout.compose.ConstrainedLayoutReference
+import androidx.compose.ui.res.stringResource
 import androidx.constraintlayout.compose.ConstraintLayout
-import androidx.constraintlayout.compose.ConstraintLayoutScope
 import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberImagePainter
 import com.devwarex.chatapp.R
+import com.devwarex.chatapp.db.Message
 import com.devwarex.chatapp.models.MessageModel
+import com.devwarex.chatapp.ui.theme.DarkBlue
+import com.devwarex.chatapp.ui.theme.LightBlack
+import com.devwarex.chatapp.ui.theme.LightBlue
 import dagger.hilt.android.AndroidEntryPoint
-import dagger.hilt.android.lifecycle.HiltViewModel
 
 
 @AndroidEntryPoint
@@ -44,49 +38,32 @@ class ConversationActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        //window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         setContent {
             ChatAppTheme {
-                // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
-                ) { MainLayout() }
+                ) { MainLayoutScreen() }
             }
         }
     }
 }
 
 
-fun Modifier.firstBaselineToTop(
-    firstBaselineToTop: Dp
-) = this.then(
-    layout { measurable, constraints ->
-        val placeable = measurable.measure(constraints)
-        check(placeable[FirstBaseline] != AlignmentLine.Unspecified)
-        val firstBaseline = placeable[FirstBaseline]
-
-        // Height of the composable with padding - first baseline
-        val placeableY = firstBaselineToTop.roundToPx() - firstBaseline
-        val height = placeable.height + placeableY
-        layout(placeable.width, height) {
-            placeable.placeRelative(0,placeableY)
-        }
-    }
-)
-
 @Preview
 @Composable
 fun TextWithNormalPaddingPreview(modifier: Modifier = Modifier) {
     ChatAppTheme {
-      MainLayout()
+        MainLayoutScreen()
     }
 }
 
 
 @Composable
-fun MainLayout(modifier: Modifier = Modifier){
-    Log.e("text","inside main")
+fun MainLayoutScreen(modifier: Modifier = Modifier){
     val viewModel =  hiltViewModel<MessagesViewModel>()
+    val (messages,enable,uid,isLoading) = viewModel.uiState.collectAsState().value
     Scaffold(
         topBar = {
             TopAppBar(
@@ -96,18 +73,21 @@ fun MainLayout(modifier: Modifier = Modifier){
     ) {
         ConstraintLayout{
             val ( list , edit ) = createRefs()
-            Log.e("text","inside constraint")
-            LazyColumn(modifier = modifier
-                .constrainAs(list) {
-                    top.linkTo(parent.top)
-                    bottom.linkTo(edit.top)
-                    height = Dimension.preferredWrapContent
-
-                }
-                .fillMaxWidth()){
-                Log.e("text","inside lazy")
-                items(viewModel.messages){
-                    MessageCard(msg = it)
+            if(uid.isNotEmpty()) {
+                LazyColumn(
+                    modifier = modifier
+                        .fillMaxHeight()
+                        .constrainAs(list) {
+                            top.linkTo(parent.top)
+                            bottom.linkTo(edit.top)
+                            height = Dimension.preferredWrapContent
+                        }
+                        .fillMaxWidth(),
+                    reverseLayout = true
+                ) {
+                    items(messages) {
+                        MainMessageCard(msg = it, uid = uid)
+                    }
                 }
             }
             Row(modifier = modifier
@@ -119,12 +99,11 @@ fun MainLayout(modifier: Modifier = Modifier){
                 .fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween) {
                 MessageEditText(modifier.weight(1f), viewModel = viewModel)
-               // Spacer(modifier = modifier.width(16.dp))
                 FloatingActionButton(
-                    onClick = { viewModel.onClick() },
+                    onClick = { if (enable) viewModel.send() },
                     modifier = modifier
                         .padding(end = 8.dp)
-                        .align(alignment = Alignment.CenterVertically)
+                        .align(alignment = Alignment.CenterVertically),
                 ) {
                     Icon(painter = painterResource(R.drawable.ic_send) , contentDescription = "send", modifier = modifier)
                 }
@@ -141,41 +120,89 @@ fun MessageEditText(modifier: Modifier,viewModel: MessagesViewModel){
     TextField(
         value = t.value,
         onValueChange = viewModel::setText ,
-        modifier = modifier.padding(end = 8.dp),
+        modifier = modifier
+            .padding(end = 8.dp),
         maxLines = 3,
-        placeholder = { Text(text = "Message") }
-
-    )
-    Log.e("text","inside edit fun")
-}
-@Composable
-fun MessageCard(msg: MessageModel) {
-    Row(modifier = Modifier.padding(all = 8.dp)) {
-        Image(
-            painter = rememberImagePainter(
-                data = msg.img
-            ),
-            contentDescription = "image profile",
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                /*.border(1.dp, MaterialTheme.colors.secondary, CircleShape)*/
+        placeholder = { Text(text = stringResource(id = R.string.message_title))},
+        colors = TextFieldDefaults.textFieldColors(
+            disabledIndicatorColor = Color.Transparent,
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            textColor = MaterialTheme.colors.onSurface
         )
-        Spacer(modifier = Modifier.width(8.dp))
-        Column {
-            Text(
-                text = msg.auth,
-                color = MaterialTheme.colors.secondary,
-                style = MaterialTheme.typography.subtitle1
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Surface(shape = MaterialTheme.shapes.medium, elevation = 2.dp) {
-                Text(
-                    text = msg.body,
-                    style = MaterialTheme.typography.body2,
-                    modifier = Modifier.padding(all = 4.dp)
-                )
-            }
+    )
+}
+
+@Composable
+fun MainMessageCard(msg: Message,uid: String){
+    Column(modifier = Modifier
+        .fillMaxWidth()
+        .padding(bottom = 4.dp)) {
+        if (uid == msg.senderId) {
+            SenderMessageCard(msg = msg, modifier = Modifier.align(Alignment.End))
+        }else {
+            ReceiveMessageCard(msg = msg, modifier = Modifier.align(Alignment.Start))
         }
     }
 }
+@Composable
+fun ReceiveMessageCard(msg: Message,modifier: Modifier) {
+    Card(
+        shape = MaterialTheme.shapes.medium.copy(
+            bottomStart = CornerSize(4.dp),
+            bottomEnd = CornerSize(4.dp),
+            topEnd = CornerSize(4.dp)
+        ),
+        elevation = 2.dp,
+        modifier = modifier.padding(end = 32.dp, start = 4.dp, bottom = 4.dp)
+    ) {
+        Column {
+            Text(
+                text = msg.body,
+                style = MaterialTheme.typography.body1,
+                modifier = Modifier.padding(all = 4.dp)
+            )
+            Text(
+                text = "27 Mar 2:50",
+                style = MaterialTheme.typography.caption,
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .padding(all = 2.dp),
+                color = Color.LightGray
+            )
+        }
+    }
+}
+
+
+@Composable
+fun SenderMessageCard(msg: Message,modifier: Modifier){
+    Card(
+        shape = MaterialTheme.shapes.medium.copy(
+            bottomStart = CornerSize(4.dp),
+            bottomEnd = CornerSize(4.dp),
+            topStart = CornerSize(4.dp)
+        ),
+        elevation = 2.dp,
+        modifier = modifier.padding(end = 2.dp, start = 32.dp, bottom = 4.dp),
+        backgroundColor = LightBlue
+    ) {
+        Column {
+            Text(
+                text = msg.body,
+                style = MaterialTheme.typography.body1,
+                modifier = Modifier.padding(all = 4.dp),
+                color = LightBlack
+            )
+            Text(
+                text = "27 Mar 2:50",
+                style = MaterialTheme.typography.caption,
+                modifier = Modifier
+                    .align(Alignment.Start)
+                    .padding(all = 2.dp),
+                color = Color.Gray
+            )
+        }
+    }
+}
+
