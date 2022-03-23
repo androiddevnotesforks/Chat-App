@@ -25,4 +25,8 @@
     <string name="online_name">online</string>
     <string name="typing_name">typing..</string>
     <string name="offline_name">offline</string>
+    <string name="add_user_title">Add user</string>
+    <string name="add_title">Add</string>
+    <string name="enter_email_title">Enter email</string>
+    <string name="user_added">User added</string>
 </resources>

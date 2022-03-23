@@ -7,25 +7,23 @@ import com.devwarex.chatapp.db.User
 import com.devwarex.chatapp.models.ChatModel
 import com.devwarex.chatapp.models.UserModel
 import com.devwarex.chatapp.repos.UserByIdRepo
+import com.devwarex.chatapp.ui.signUp.ErrorsState
 import com.devwarex.chatapp.utility.Paths
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
-import com.google.gson.Gson
 import io.reactivex.rxjava3.schedulers.Schedulers
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 class ChatsRepo @Inject constructor(
     private val database: AppDao,
-    private val userByIdRepo: UserByIdRepo
+    private val userByIdRepo: UserByIdRepo,
+    private val addUserRepo: AddUserRepo
 ) {
 
     private val db = Firebase.firestore
@@ -33,6 +31,8 @@ class ChatsRepo @Inject constructor(
     val uiState: StateFlow<ChatUiState> get() = _uiState
     private val job = CoroutineScope(Dispatchers.Unconfined)
     private var chatListener: ListenerRegistration? = null
+    val error: Flow<ErrorsState> get() = addUserRepo.error.receiveAsFlow()
+    val isAdded: Flow<Boolean> get() = addUserRepo.isAdded.receiveAsFlow()
     init {
         sync(Firebase.auth.uid)
         job.launch {
@@ -41,6 +41,9 @@ class ChatsRepo @Inject constructor(
         }
     }
 
+    fun addUser(email: String){
+        addUserRepo.addUser(email = email)
+    }
     private fun sync(uid: String?){
         if (uid == null) return
         chatListener = db.collection(Paths.CHATS)
@@ -62,7 +65,6 @@ class ChatsRepo @Inject constructor(
                 if (task.isSuccessful){
                     for (document in task.result.documents){
                         val chat = document.toObject(ChatModel::class.java)
-                        Log.e("chat",Gson().toJson(chat))
                         if (chat != null){
                            saveChatToDb(uid = uid, chat = chat)
                         }
@@ -75,7 +77,7 @@ class ChatsRepo @Inject constructor(
     private fun saveChatToDb(uid: String,chat: ChatModel){
         job.launch {
             chat.ids.forEach {
-                if (it != uid) {
+                if (it != uid && chat.id.isNotEmpty()) {
                     database.insertChat(
                         Chat(
                             id = chat.id,
@@ -85,7 +87,7 @@ class ChatsRepo @Inject constructor(
                             receiverUid = it
                         )
                     ).subscribeOn(Schedulers.computation())
-                        .subscribe({userByIdRepo.getUser(it)},{Log.e("save_chat","error: ${it.message}")})
+                        .subscribe({userByIdRepo.getUser(it)},{ Log.e("save_chat","error: ${it.message}")})
                 }
             }
         }
@@ -108,5 +110,18 @@ class ChatsRepo @Inject constructor(
         if (chatListener != null) {
             chatListener?.remove()
         }
+    }
+
+
+    fun clearEmail(email: String): String {
+        var newEmail = ""
+        if (email.isNotBlank()) {
+            email.forEach { c ->
+                if (!c.isWhitespace()) {
+                    newEmail += c
+                }
+            }
+        }
+        return newEmail
     }
 }
