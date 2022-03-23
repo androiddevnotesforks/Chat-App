@@ -25,6 +25,7 @@ class MessagesViewModel @Inject constructor(
         repo.sync(chatId)
     }
     fun setText(s: String){
+        repo.setTypingState(s.isNotEmpty())
         _text.value = s
     }
 
@@ -47,5 +48,10 @@ class MessagesViewModel @Inject constructor(
 
     fun removeListener(){
         repo.removeListener()
+    }
+
+    fun onStop(){
+        repo.setTypingState(false)
+        repo.setAvailability(false)
     }
 }

@@ -61,11 +61,6 @@ class ConversationActivity : ComponentActivity() {
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-
-    }
-
     override fun onResume() {
         super.onResume()
         chatId = intent.getStringExtra(CHAT_ID) ?: ""
@@ -84,6 +79,8 @@ class ConversationActivity : ComponentActivity() {
             intent.putExtra(CHAT_ID, BroadCastUtility.CONVERSATION_ON_STOP_KEY)
             sendBroadcast(intent)
         }
+
+        viewModel.onStop()
     }
 
     override fun onDestroy() {
@@ -105,7 +102,7 @@ fun TextWithNormalPaddingPreview(modifier: Modifier = Modifier) {
 @Composable
 fun MainLayoutScreen(modifier: Modifier = Modifier){
     val viewModel =  hiltViewModel<MessagesViewModel>()
-    val (messages,enable,uid,isLoading,chat,user) = viewModel.uiState.collectAsState().value
+    val (messages,enable,uid,isLoading,chat,user,availability,typing) = viewModel.uiState.collectAsState().value
     Scaffold(
         topBar = {
             Box(
@@ -114,7 +111,9 @@ fun MainLayoutScreen(modifier: Modifier = Modifier){
                     .requiredHeight(56.dp)
                     .background(MaterialTheme.colors.primarySurface),
             ) {
-                Row(modifier = Modifier.align(Alignment.CenterStart).padding(start = 16.dp)) {
+                Row(modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .padding(start = 16.dp)) {
                     Image(
                         painter = if (user?.img.isNullOrEmpty()) painterResource(id = R.drawable.user) else rememberImagePainter(data = user?.img),
                         contentDescription = "User Image",
@@ -130,7 +129,8 @@ fun MainLayoutScreen(modifier: Modifier = Modifier){
                             color = MaterialTheme.colors.onPrimary
                         )
                         Text(
-                            text = "online",
+                            text = if (availability && typing) stringResource(id = R.string.typing_name)
+                            else if (availability) stringResource(id = R.string.online_name) else stringResource(id = R.string.offline_name),
                             style = MaterialTheme.typography.caption
                         )
                     }

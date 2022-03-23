@@ -22,4 +22,7 @@
     <string name="email_not_found_message">Email never exist</string>
     <string name="wrong_password_message">Wrong password!</string>
     <string name="message_title">Message</string>
+    <string name="online_name">online</string>
+    <string name="typing_name">typing..</string>
+    <string name="offline_name">offline</string>
 </resources>

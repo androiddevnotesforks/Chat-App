@@ -5,7 +5,13 @@ import com.devwarex.chatapp.db.AppDao
 import com.devwarex.chatapp.models.UserModel
 import com.devwarex.chatapp.repos.SendMessageRepo
 import com.devwarex.chatapp.repos.UserByIdRepo
+import com.devwarex.chatapp.utility.Paths
 import com.google.firebase.auth.ktx.auth
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.ktx.database
+import com.google.firebase.database.ktx.getValue
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,30 +34,28 @@ class ConversationRepo @Inject constructor(
     val uiState: StateFlow<MessageUiState> get() = _uiState
     private var token: String = ""
     private var chatId: String = ""
+    private val dbRef = Firebase.database(Paths.DATABASE_URL).reference
+    private var currentUid: String = ""
 
     fun sync(id: String){
+        currentUid = Firebase.auth.uid ?: ""
         chatId = id
         repo.sync(chatId = chatId)
+        userRepo.getUser(currentUid)
         CoroutineScope(Dispatchers.Unconfined).launch {
-            launch { database.getMessages(chatId = chatId).collect { _uiState.value = _uiState.value.copy(messages = it) } }
+            launch { database.getMessages(chatId = chatId).collect { _uiState.value = _uiState.value.copy(uid = currentUid, messages = it) } }
             launch { database.getChatByChatId(chatId).collect {
                 _uiState.value = _uiState.value.copy(chat = it.chat, receiverUser = it.user)
                 userRepo.getTokenByUserId(it.user?.uid ?: "")
+                initDataBase(it.user?.uid ?: "")
             } }
         }
     }
     init {
-        userRepo.getUser(Firebase.auth.uid ?: "")
-        userRepo.getTokenByUserId(Firebase.auth.uid ?: "")
         CoroutineScope(Dispatchers.Unconfined).launch {
-            launch {
-                userRepo.user.receiveAsFlow().collect {
-                    currentUser = it
-                    _uiState.value = _uiState.value.copy(uid = currentUser?.uid ?: "")
-                }
-            }
             launch { sendMessageRepo.isLoading.receiveAsFlow().collect { _uiState.value = _uiState.value.copy(isLoading = it, enable = !it) } }
             launch { userRepo.token.receiveAsFlow().collect { token = it } }
+            launch { userRepo.user.receiveAsFlow().collect { currentUser = it } }
         }
     }
 
@@ -67,7 +71,44 @@ class ConversationRepo @Inject constructor(
         }
     }
 
+    private val availabilityListener = object : ValueEventListener {
+        override fun onDataChange(snapshot: DataSnapshot) {
+            _uiState.value = _uiState.value.copy(availability = snapshot.getValue<Boolean>() ?: false)
+        }
+
+        override fun onCancelled(error: DatabaseError) {
+
+        }
+    }
+
+    private val typingListener = object : ValueEventListener{
+        override fun onDataChange(snapshot: DataSnapshot) {
+            _uiState.value = _uiState.value.copy(typing = snapshot.getValue<Boolean>() ?: false)
+        }
+
+        override fun onCancelled(error: DatabaseError) {
+
+        }
+    }
+
+    private fun initDataBase(receiverUid: String){
+        if (receiverUid.isEmpty()) return
+        dbRef.child("${Paths.DM}$chatId/$receiverUid/availability").addListenerForSingleValueEvent(availabilityListener)
+        dbRef.child("${Paths.DM}$chatId/$receiverUid/typing").addListenerForSingleValueEvent(typingListener)
+        setAvailability(true)
+    }
+
     fun removeListener(){
         repo.removeListener()
+        dbRef.removeEventListener(availabilityListener)
+        dbRef.removeEventListener(typingListener)
+    }
+
+    fun setAvailability(b: Boolean){
+        dbRef.child("${Paths.DM}/$chatId/$currentUid/availability").setValue(b)
+    }
+
+    fun setTypingState(b: Boolean){
+        dbRef.child("${Paths.DM}/$chatId/$currentUid/typing").setValue(b)
     }
 }

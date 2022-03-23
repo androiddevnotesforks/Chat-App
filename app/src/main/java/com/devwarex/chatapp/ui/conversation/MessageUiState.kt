@@ -10,5 +10,7 @@ data class MessageUiState(
     val uid: String = "",
     val isLoading: Boolean = true,
     val chat: Chat? = null,
-    val receiverUser: User? = null
+    val receiverUser: User? = null,
+    val availability: Boolean = false,
+    val typing: Boolean = false
 )
