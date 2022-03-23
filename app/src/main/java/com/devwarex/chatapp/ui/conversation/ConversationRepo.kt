@@ -7,7 +7,6 @@ import com.devwarex.chatapp.repos.SendMessageRepo
 import com.devwarex.chatapp.repos.UserByIdRepo
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
-import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,8 +27,20 @@ class ConversationRepo @Inject constructor(
     private val _uiState = MutableStateFlow<MessageUiState>(MessageUiState())
     val uiState: StateFlow<MessageUiState> get() = _uiState
     private var token: String = ""
+    private var chatId: String = ""
+
+    fun sync(id: String){
+        chatId = id
+        repo.sync(chatId = chatId)
+        CoroutineScope(Dispatchers.Unconfined).launch {
+            launch { database.getMessages(chatId = chatId).collect { _uiState.value = _uiState.value.copy(messages = it) } }
+            launch { database.getChatByChatId(chatId).collect {
+                _uiState.value = _uiState.value.copy(chat = it.chat, receiverUser = it.user)
+                userRepo.getTokenByUserId(it.user?.uid ?: "")
+            } }
+        }
+    }
     init {
-        repo.sync("")
         userRepo.getUser(Firebase.auth.uid ?: "")
         userRepo.getTokenByUserId(Firebase.auth.uid ?: "")
         CoroutineScope(Dispatchers.Unconfined).launch {
@@ -39,10 +50,7 @@ class ConversationRepo @Inject constructor(
                     _uiState.value = _uiState.value.copy(uid = currentUser?.uid ?: "")
                 }
             }
-            launch { database.getMessages().collect { _uiState.value = _uiState.value.copy(messages = it) } }
-
             launch { sendMessageRepo.isLoading.receiveAsFlow().collect { _uiState.value = _uiState.value.copy(isLoading = it, enable = !it) } }
-
             launch { userRepo.token.receiveAsFlow().collect { token = it } }
         }
     }
@@ -53,10 +61,13 @@ class ConversationRepo @Inject constructor(
                 uid = currentUser?.uid ?: "",
                 name = currentUser?.name ?: "",
                 text = text,
-                chatId = "",
+                chatId = chatId,
                 token = token
             )
         }
     }
 
+    fun removeListener(){
+        repo.removeListener()
+    }
 }

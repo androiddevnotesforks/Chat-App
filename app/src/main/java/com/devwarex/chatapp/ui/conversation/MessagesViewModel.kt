@@ -20,6 +20,10 @@ class MessagesViewModel @Inject constructor(
     val uiState: StateFlow<MessageUiState> get() = _uiState
     val text: StateFlow<String> get() = _text
 
+    fun sync(chatId: String){
+        if (chatId.isEmpty()) return
+        repo.sync(chatId)
+    }
     fun setText(s: String){
         _text.value = s
     }
@@ -41,4 +45,7 @@ class MessagesViewModel @Inject constructor(
         }
     }
 
+    fun removeListener(){
+        repo.removeListener()
+    }
 }

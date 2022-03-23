@@ -5,6 +5,7 @@ import com.devwarex.chatapp.models.MessageNotificationModel
 import com.devwarex.chatapp.models.MessageNotifyDataModel
 import com.devwarex.chatapp.utility.MessageType
 import com.devwarex.chatapp.utility.Paths
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.CoroutineScope
@@ -25,21 +26,33 @@ class SendMessageRepo @Inject constructor() {
                     senderId = uid,
                     type = MessageType.TEXT,
                     body = text,
-                    name = name
+                    name = name,
+                    chatId = chatId
                 )
             ).addOnCompleteListener { job.launch {
                 isLoading.send(!it.isSuccessful) }
-                PushNotificationRepo.push(
-                    fcm = MessageNotificationModel(
-                        to = token,
-                        data = MessageNotifyDataModel(
-                            title = name,
-                            id = chatId,
-                            body = if (text.length > 15) text.take(15)+"..." else text
+                updateLastMessage(chatId = chatId, lastMessage = text)
+                if (token.isNotEmpty()) {
+                    PushNotificationRepo.push(
+                        fcm = MessageNotificationModel(
+                            to = token,
+                            data = MessageNotifyDataModel(
+                                title = name,
+                                id = chatId,
+                                body = if (text.length > 15) text.take(15) + "..." else text
+                            )
                         )
                     )
-                )
+                }
             }
             .addOnFailureListener { job.launch { isLoading.send(false) } }
+    }
+
+    private fun updateLastMessage(chatId: String,lastMessage: String){
+        db.collection(Paths.CHATS)
+            .document(chatId).update(
+                "lastMessage",lastMessage,
+                "lastEdit",FieldValue.serverTimestamp()
+            ).addOnCompleteListener {  }
     }
 }

@@ -9,9 +9,13 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -20,12 +24,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.devwarex.chatapp.ui.theme.ChatAppTheme
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.rememberImagePainter
 import com.devwarex.chatapp.ChatAppBroadCastReceiver
 import com.devwarex.chatapp.R
 import com.devwarex.chatapp.db.Message
@@ -39,7 +46,8 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class ConversationActivity : ComponentActivity() {
 
-    var chatId = ""
+    private var chatId = ""
+    private val viewModel by viewModels<MessagesViewModel>()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         //window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
@@ -61,6 +69,7 @@ class ConversationActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         chatId = intent.getStringExtra(CHAT_ID) ?: ""
+        viewModel.sync(chatId)
         Intent().also { intent ->
             intent.action = BroadCastUtility.CONVERSATION_ACTION_ID
             intent.putExtra(CHAT_ID, chatId)
@@ -75,6 +84,11 @@ class ConversationActivity : ComponentActivity() {
             intent.putExtra(CHAT_ID, BroadCastUtility.CONVERSATION_ON_STOP_KEY)
             sendBroadcast(intent)
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        viewModel.removeListener()
     }
 }
 
@@ -91,12 +105,37 @@ fun TextWithNormalPaddingPreview(modifier: Modifier = Modifier) {
 @Composable
 fun MainLayoutScreen(modifier: Modifier = Modifier){
     val viewModel =  hiltViewModel<MessagesViewModel>()
-    val (messages,enable,uid,isLoading) = viewModel.uiState.collectAsState().value
+    val (messages,enable,uid,isLoading,chat,user) = viewModel.uiState.collectAsState().value
     Scaffold(
         topBar = {
-            TopAppBar(
-                title ={ Text(text = "Chat") }
-            )
+            Box(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .requiredHeight(56.dp)
+                    .background(MaterialTheme.colors.primarySurface),
+            ) {
+                Row(modifier = Modifier.align(Alignment.CenterStart).padding(start = 16.dp)) {
+                    Image(
+                        painter = if (user?.img.isNullOrEmpty()) painterResource(id = R.drawable.user) else rememberImagePainter(data = user?.img),
+                        contentDescription = "User Image",
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                    Column(Modifier.padding(start = 8.dp)) {
+                        Text(
+                            text = user?.name ?: "Name",
+                            style = MaterialTheme.typography.h5,
+                            color = MaterialTheme.colors.onPrimary
+                        )
+                        Text(
+                            text = "online",
+                            style = MaterialTheme.typography.caption
+                        )
+                    }
+                }
+            }
         }
     ) {
         ConstraintLayout{

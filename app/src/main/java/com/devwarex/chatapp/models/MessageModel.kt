@@ -10,14 +10,16 @@ class MessageModel(){
     var senderId: String = ""
     var body: String = ""
     var type: MessageType = MessageType.TEXT
+    var chatId: String = ""
     @ServerTimestamp
     val timestamp: Date? = null
 
-    constructor(type: MessageType,senderId: String,name: String,body: String): this() {
+    constructor(type: MessageType,senderId: String,name: String,body: String,chatId: String): this() {
         this.type = type
         this.senderId = senderId
         this.body = body
         this.name = name
+        this.chatId = chatId
 
     }
 

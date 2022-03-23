@@ -33,6 +33,7 @@ class UserByIdRepo @Inject constructor() {
 
 
     fun getTokenByUserId(uid: String){
+        if (uid.isEmpty()) return
         db.collection(Paths.TOKENS)
             .document(uid)
             .get(Source.SERVER)
