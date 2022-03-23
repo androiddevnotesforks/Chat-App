@@ -61,7 +61,7 @@ class FirebaseInstanceService : FirebaseMessagingService() {
             val chatId = remote.data["id"] ?: ""
             var defaultIntent = Intent(this, ConversationActivity::class.java)
             if (chatId.isNotEmpty()) {
-                defaultIntent.putExtra("CHAT_ID_KEY", chatId)
+                defaultIntent.putExtra("chat_id", chatId)
             }else{
                 defaultIntent = Intent(this, ChatsActivity::class.java)
             }
@@ -89,7 +89,7 @@ class FirebaseInstanceService : FirebaseMessagingService() {
                 notificationManager.createNotificationChannel(channel)
 
                 val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-                    .setSmallIcon(R.drawable.user)
+                    .setSmallIcon(R.drawable.ic_message)
                     .setContentTitle(title)
                     .setContentText(body)
                     .setPriority(NotificationCompat.PRIORITY_MAX)
@@ -109,7 +109,7 @@ class FirebaseInstanceService : FirebaseMessagingService() {
             } else {
                 val mBuilder = NotificationCompat.Builder(this)
                 mBuilder.setContentTitle(title)
-                    .setSmallIcon(R.drawable.user)
+                    .setSmallIcon(R.drawable.ic_message)
                     .setContentText(body)
                     .setContentIntent(defaultPendingIntent)
                     .setAutoCancel(true)

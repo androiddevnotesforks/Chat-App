@@ -18,7 +18,14 @@ class SendMessageRepo @Inject constructor() {
     private val db = Firebase.firestore
     val isLoading = Channel<Boolean>()
     private val job = CoroutineScope(Dispatchers.Unconfined)
-    fun sendTextMessage(chatId: String,uid: String,text: String,name: String,token: String){
+    fun sendTextMessage(
+        chatId: String,
+        uid: String,
+        text: String,
+        name: String,
+        token: String,
+        availability: Boolean
+    ){
         job.launch { isLoading.send(true) }
         db.collection(Paths.MESSAGES)
             .add(
@@ -32,7 +39,7 @@ class SendMessageRepo @Inject constructor() {
             ).addOnCompleteListener { job.launch {
                 isLoading.send(!it.isSuccessful) }
                 updateLastMessage(chatId = chatId, lastMessage = text)
-                if (token.isNotEmpty()) {
+                if (token.isNotEmpty() && !availability) {
                     PushNotificationRepo.push(
                         fcm = MessageNotificationModel(
                             to = token,

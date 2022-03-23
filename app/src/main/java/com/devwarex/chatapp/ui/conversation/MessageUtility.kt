@@ -9,20 +9,19 @@ class MessageUtility {
         fun isTextMassageValid(text: String): Boolean = text.isNotBlank() && text.isNotEmpty()
         fun filterText(text: String): String{
             var t = text
-            if (text.isBlank()){
-                return text
+            if (t.isBlank()){
+                return t
             }
-            if (text.isNotBlank() && text.length < 3){
-                return text
+            if (t.isNotBlank() && t.length < 3){
+                return t
             }
-            /*val builder = StringBuilder(text)
+            val builder = StringBuilder(t)
             while (t[0].isWhitespace()){
                 t = builder.deleteCharAt(0).toString()
             }
-            while (t[text.lastIndex].isWhitespace()){
+            while (t[t.lastIndex].isWhitespace()){
                 t = builder.deleteCharAt(t.lastIndex).toString()
             }
-*/
             return t
         }
     }

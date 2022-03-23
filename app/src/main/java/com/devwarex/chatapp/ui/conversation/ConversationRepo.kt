@@ -1,6 +1,5 @@
 package com.devwarex.chatapp.ui.conversation
 
-import android.util.Log
 import com.devwarex.chatapp.db.AppDao
 import com.devwarex.chatapp.models.UserModel
 import com.devwarex.chatapp.repos.SendMessageRepo
@@ -66,7 +65,8 @@ class ConversationRepo @Inject constructor(
                 name = currentUser?.name ?: "",
                 text = text,
                 chatId = chatId,
-                token = token
+                token = token,
+                availability = _uiState.value.availability
             )
         }
     }
@@ -93,8 +93,14 @@ class ConversationRepo @Inject constructor(
 
     private fun initDataBase(receiverUid: String){
         if (receiverUid.isEmpty()) return
-        dbRef.child("${Paths.DM}$chatId/$receiverUid/availability").addListenerForSingleValueEvent(availabilityListener)
-        dbRef.child("${Paths.DM}$chatId/$receiverUid/typing").addListenerForSingleValueEvent(typingListener)
+        dbRef.child(Paths.DM)
+            .child(chatId)
+            .child(receiverUid)
+            .child("availability").addValueEventListener(availabilityListener)
+        dbRef.child(Paths.DM)
+            .child(chatId)
+            .child(receiverUid)
+            .child("typing").addValueEventListener(typingListener)
         setAvailability(true)
     }
 
@@ -105,7 +111,10 @@ class ConversationRepo @Inject constructor(
     }
 
     fun setAvailability(b: Boolean){
-        dbRef.child("${Paths.DM}/$chatId/$currentUid/availability").setValue(b)
+        dbRef.child(Paths.DM)
+            .child(chatId)
+            .child(currentUid)
+            .child("availability").setValue(b)
     }
 
     fun setTypingState(b: Boolean){

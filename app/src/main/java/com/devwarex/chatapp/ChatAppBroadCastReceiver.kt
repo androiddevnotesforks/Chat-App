@@ -77,7 +77,7 @@ class ChatAppBroadCastReceiver: BroadcastReceiver() {
                 notificationManager.createNotificationChannel(channel)
 
                 val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-                    .setSmallIcon(R.drawable.user)
+                    .setSmallIcon(R.drawable.ic_message)
                     .setContentTitle(title)
                     .setContentText(body)
                     .setPriority(NotificationCompat.PRIORITY_MAX)
@@ -97,7 +97,7 @@ class ChatAppBroadCastReceiver: BroadcastReceiver() {
             } else {
                 val mBuilder = NotificationCompat.Builder(context)
                 mBuilder.setContentTitle(title)
-                    .setSmallIcon(R.drawable.user)
+                    .setSmallIcon(R.drawable.ic_message)
                     .setContentText(body)
                     .setContentIntent(defaultPendingIntent)
                     .setAutoCancel(true)

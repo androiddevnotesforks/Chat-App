@@ -43,6 +43,8 @@ class MessagesViewModel @Inject constructor(
                     _text.value = ""
                 }
             } }
+
+            launch { text.collect {  repo.setTypingState(it.isNotEmpty()) } }
         }
     }
 
