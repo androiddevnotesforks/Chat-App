@@ -5,6 +5,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
+
     <application
         android:name=".ChatApp"
         android:allowBackup="true"
@@ -14,6 +15,14 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ChatApp">
 
+        <receiver android:name=".ChatAppBroadCastReceiver"  android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.INPUT_METHOD_CHANGED" />
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+        </receiver>
         <service
             android:name=".FirebaseInstanceService"
             android:exported="false"
@@ -35,8 +44,12 @@
             android:exported="false"
             android:label="@string/title_activity_sign_up"
             android:theme="@style/Theme.ChatApp"/>
+
+        <activity android:name=".ui.chat.ChatsActivity"
+            android:exported="true"
+            android:theme="@style/Theme.ChatApp"/>
         <activity android:name=".ui.conversation.ConversationActivity"
-            android:exported="false"
+            android:exported="true"
             android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.ChatApp"
             />

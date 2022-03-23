@@ -1,6 +1,12 @@
 package com.devwarex.chatapp.ui.conversation
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.net.ConnectivityManager
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
@@ -20,16 +26,20 @@ import androidx.compose.ui.res.stringResource
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.devwarex.chatapp.ChatAppBroadCastReceiver
 import com.devwarex.chatapp.R
 import com.devwarex.chatapp.db.Message
 import com.devwarex.chatapp.ui.theme.LightBlack
 import com.devwarex.chatapp.ui.theme.LightBlue
+import com.devwarex.chatapp.utility.BroadCastUtility
+import com.devwarex.chatapp.utility.BroadCastUtility.Companion.CHAT_ID
 import dagger.hilt.android.AndroidEntryPoint
 
 
 @AndroidEntryPoint
 class ConversationActivity : ComponentActivity() {
 
+    var chatId = ""
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         //window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
@@ -40,6 +50,30 @@ class ConversationActivity : ComponentActivity() {
                     color = MaterialTheme.colors.background
                 ) { MainLayoutScreen() }
             }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+
+    }
+
+    override fun onResume() {
+        super.onResume()
+        chatId = intent.getStringExtra(CHAT_ID) ?: ""
+        Intent().also { intent ->
+            intent.action = BroadCastUtility.CONVERSATION_ACTION_ID
+            intent.putExtra(CHAT_ID, chatId)
+            sendBroadcast(intent)
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        Intent().also { intent ->
+            intent.action = BroadCastUtility.CONVERSATION_ACTION_ID
+            intent.putExtra(CHAT_ID, BroadCastUtility.CONVERSATION_ON_STOP_KEY)
+            sendBroadcast(intent)
         }
     }
 }
@@ -144,9 +178,10 @@ fun MainMessageCard(msg: Message,uid: String){
 fun ReceiveMessageCard(msg: Message,modifier: Modifier) {
     Card(
         shape = MaterialTheme.shapes.medium.copy(
-            bottomStart = CornerSize(4.dp),
-            bottomEnd = CornerSize(4.dp),
-            topEnd = CornerSize(4.dp)
+            bottomStart = CornerSize(6.dp),
+            bottomEnd = CornerSize(6.dp),
+            topEnd = CornerSize(6.dp),
+            topStart = CornerSize(0.dp)
         ),
         elevation = 2.dp,
         modifier = modifier.padding(end = 32.dp, start = 4.dp, bottom = 4.dp)
@@ -174,9 +209,10 @@ fun ReceiveMessageCard(msg: Message,modifier: Modifier) {
 fun SenderMessageCard(msg: Message,modifier: Modifier){
     Card(
         shape = MaterialTheme.shapes.medium.copy(
-            bottomStart = CornerSize(4.dp),
-            bottomEnd = CornerSize(4.dp),
-            topStart = CornerSize(4.dp)
+            bottomStart = CornerSize(6.dp),
+            bottomEnd = CornerSize(6.dp),
+            topEnd = CornerSize(0.dp),
+            topStart = CornerSize(6.dp)
         ),
         elevation = 2.dp,
         modifier = modifier.padding(end = 2.dp, start = 32.dp, bottom = 4.dp),

@@ -1,5 +1,8 @@
 package com.devwarex.chatapp.models
 
+import com.google.firebase.firestore.ServerTimestamp
+import java.util.*
+
 class UserModel(){
     var id: String = ""
     var name: String = ""
@@ -7,6 +10,8 @@ class UserModel(){
     var uid: String = ""
     var deviceToken: String = ""
     var img: String = ""
+    @ServerTimestamp
+    val timestamp: Date? = null
     constructor(
         name: String,
         email: String,

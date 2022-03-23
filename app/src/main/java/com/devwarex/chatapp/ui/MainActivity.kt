@@ -14,6 +14,7 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.devwarex.chatapp.R
+import com.devwarex.chatapp.ui.chat.ChatsActivity
 import com.devwarex.chatapp.ui.conversation.ConversationActivity
 import com.devwarex.chatapp.ui.signUp.SignUpActivity
 import com.google.firebase.auth.ktx.auth
@@ -38,7 +39,8 @@ class MainActivity : ComponentActivity() {
             startActivity(signUp)
             finish()
         }else{
-            val homeIntent = Intent(this, ConversationActivity::class.java)
+            val homeIntent = Intent(this, ChatsActivity::class.java)
+                .putExtra("chat_id","testing chat id ya rab")
             startActivity(homeIntent)
             finish()
         }
