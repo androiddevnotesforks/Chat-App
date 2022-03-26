@@ -21,4 +21,16 @@ class UserModel(){
         this.email = email
         this.uid = uid
     }
+
+    constructor(
+        name: String,
+        email: String,
+        uid: String,
+        img: String
+    ): this(){
+        this.name = name
+        this.email = email
+        this.uid = uid
+        this.img = img
+    }
 }

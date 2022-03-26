@@ -8,6 +8,7 @@ class Paths {
         const val MESSAGES: String = "messages"
         const val CHATS: String = "chats"
         const val DM: String = "dm"
+        const val FIREBASE_CLIENT_ID: String = "69485041913-46t2p7dnlungi0md8mi6e1s1ug74eso0.apps.googleusercontent.com"
 
         const val DATABASE_URL: String = "https://chat-app-50546-default-rtdb.europe-west1.firebasedatabase.app/"
         const val FCM_URL = "https://fcm.googleapis.com/"

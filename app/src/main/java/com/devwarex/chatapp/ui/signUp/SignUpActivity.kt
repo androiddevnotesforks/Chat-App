@@ -23,6 +23,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.devwarex.chatapp.R
+import com.devwarex.chatapp.ui.MainActivity
 import com.devwarex.chatapp.ui.conversation.ConversationActivity
 import com.devwarex.chatapp.ui.theme.ChatAppTheme
 import com.devwarex.chatapp.ui.theme.DarkBackground
@@ -48,7 +49,7 @@ class SignUpActivity : ComponentActivity() {
         val viewModel: SignUpViewModel by viewModels()
         viewModel.isSucceed.observe(this){
             if (it) {
-                val homeIntent = Intent(this, ConversationActivity::class.java)
+                val homeIntent = Intent(this, MainActivity::class.java)
                 startActivity(homeIntent)
                 finish()
             }

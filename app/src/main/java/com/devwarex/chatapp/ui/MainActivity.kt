@@ -35,7 +35,7 @@ class MainActivity : ComponentActivity() {
 
         val user = Firebase.auth.currentUser
         if (user == null){
-            val signUp = Intent(this, SignUpActivity::class.java)
+            val signUp = Intent(this, RegistrationActivity::class.java)
             startActivity(signUp)
             finish()
         }else{

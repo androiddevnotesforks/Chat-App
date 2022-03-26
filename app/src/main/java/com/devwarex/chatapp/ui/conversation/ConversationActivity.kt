@@ -126,7 +126,7 @@ fun MainLayoutScreen(modifier: Modifier = Modifier){
                         Text(
                             text = user?.name ?: "Name",
                             style = MaterialTheme.typography.h5,
-                            color = MaterialTheme.colors.onPrimary
+                            color = MaterialTheme.colors.onSurface
                         )
                         Text(
                             text = if (availability && typing) stringResource(id = R.string.typing_name)
