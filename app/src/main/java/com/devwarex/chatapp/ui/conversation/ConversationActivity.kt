@@ -1,12 +1,8 @@
 package com.devwarex.chatapp.ui.conversation
 
-import android.content.BroadcastReceiver
-import android.content.Context
+
 import android.content.Intent
-import android.content.IntentFilter
-import android.net.ConnectivityManager
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -33,13 +29,13 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberImagePainter
-import com.devwarex.chatapp.ChatAppBroadCastReceiver
 import com.devwarex.chatapp.R
 import com.devwarex.chatapp.db.Message
 import com.devwarex.chatapp.ui.theme.LightBlack
 import com.devwarex.chatapp.ui.theme.LightBlue
 import com.devwarex.chatapp.utility.BroadCastUtility
 import com.devwarex.chatapp.utility.BroadCastUtility.Companion.CHAT_ID
+import com.devwarex.chatapp.utility.DateUtility
 import dagger.hilt.android.AndroidEntryPoint
 
 
@@ -126,12 +122,13 @@ fun MainLayoutScreen(modifier: Modifier = Modifier){
                         Text(
                             text = user?.name ?: "Name",
                             style = MaterialTheme.typography.h5,
-                            color = MaterialTheme.colors.onSurface
+                            color = Color.White
                         )
                         Text(
                             text = if (availability && typing) stringResource(id = R.string.typing_name)
                             else if (availability) stringResource(id = R.string.online_name) else stringResource(id = R.string.offline_name),
-                            style = MaterialTheme.typography.caption
+                            style = MaterialTheme.typography.caption,
+                            color = Color.White
                         )
                     }
                 }
@@ -232,7 +229,7 @@ fun ReceiveMessageCard(msg: Message,modifier: Modifier) {
                 modifier = Modifier.padding(all = 4.dp)
             )
             Text(
-                text = "27 Mar 2:50",
+                text = DateUtility.getDate(msg.timestamp),
                 style = MaterialTheme.typography.caption,
                 modifier = Modifier
                     .align(Alignment.End)
@@ -265,7 +262,7 @@ fun SenderMessageCard(msg: Message,modifier: Modifier){
                 color = LightBlack
             )
             Text(
-                text = "27 Mar 2:50",
+                text = DateUtility.getDate(msg.timestamp),
                 style = MaterialTheme.typography.caption,
                 modifier = Modifier
                     .align(Alignment.Start)

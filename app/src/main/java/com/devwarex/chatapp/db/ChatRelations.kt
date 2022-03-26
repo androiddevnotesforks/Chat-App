@@ -11,5 +11,5 @@ data class ChatRelations(
         parentColumn = "receiverUid",
         entityColumn = "uid"
     )
-    val user: User?,
+    val user: User?
 )

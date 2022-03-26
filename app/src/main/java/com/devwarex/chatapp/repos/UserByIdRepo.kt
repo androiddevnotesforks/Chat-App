@@ -1,10 +1,12 @@
 package com.devwarex.chatapp.repos
 
+import android.util.Log
 import com.devwarex.chatapp.models.UserModel
 import com.devwarex.chatapp.utility.Paths
 import com.google.firebase.firestore.Source
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -24,6 +26,7 @@ class UserByIdRepo @Inject constructor() {
                 if (task.isSuccessful && task.result.exists()){
                     val userModel: UserModel? = task.result.toObject(UserModel::class.java)
                     if (userModel != null){
+                        Log.e("user",Gson().toJson(userModel))
                         CoroutineScope(Dispatchers.Unconfined)
                             .launch { user.send(userModel) }
                     }

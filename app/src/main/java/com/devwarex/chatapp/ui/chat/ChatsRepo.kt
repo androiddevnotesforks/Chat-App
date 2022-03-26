@@ -13,6 +13,7 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import com.google.gson.Gson
 import io.reactivex.rxjava3.schedulers.Schedulers
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -44,6 +45,8 @@ class ChatsRepo @Inject constructor(
     fun addUser(email: String){
         addUserRepo.addUser(email = email)
     }
+
+
     private fun sync(uid: String?){
         if (uid == null) return
         chatListener = db.collection(Paths.CHATS)
@@ -63,8 +66,10 @@ class ChatsRepo @Inject constructor(
             .whereArrayContains("ids",uid)
             .get().addOnCompleteListener { task ->
                 if (task.isSuccessful){
+                    Log.e("id",uid+task.result.isEmpty)
                     for (document in task.result.documents){
                         val chat = document.toObject(ChatModel::class.java)
+                        Log.e("id_caht",Gson().toJson(chat))
                         if (chat != null){
                            saveChatToDb(uid = uid, chat = chat)
                         }
@@ -103,7 +108,7 @@ class ChatsRepo @Inject constructor(
                 joinedAt = user.timestamp?.time ?: 0L
             )
         ).subscribeOn(Schedulers.computation())
-            .subscribe()
+            .subscribe({Log.e("save_user","saved")},{Log.e("save_user","error: ${it.message}")})
     }
 
     fun removeListener(){

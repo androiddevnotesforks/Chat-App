@@ -40,6 +40,7 @@ import com.devwarex.chatapp.ui.conversation.ConversationActivity
 import com.devwarex.chatapp.ui.signUp.ErrorsState
 import com.devwarex.chatapp.ui.theme.ChatAppTheme
 import com.devwarex.chatapp.utility.BroadCastUtility
+import com.google.gson.Gson
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -111,6 +112,7 @@ class ChatsActivity : ComponentActivity() {
 fun ChatsScreen(modifier: Modifier = Modifier){
     val viewModel: ChatsViewModel = hiltViewModel()
     val (chats,isLoading,showDialog) = viewModel.uiState.collectAsState().value
+    Log.e("chats_$showDialog",Gson().toJson(chats))
     Scaffold(
         topBar = {
             TopAppBar(
