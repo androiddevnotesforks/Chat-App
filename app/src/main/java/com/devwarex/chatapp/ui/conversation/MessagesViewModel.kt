@@ -4,9 +4,7 @@ package com.devwarex.chatapp.ui.conversation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -19,32 +17,36 @@ class MessagesViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<MessageUiState>(MessageUiState())
     val uiState: StateFlow<MessageUiState> get() = _uiState
     val text: StateFlow<String> get() = _text
+    val shouldFetchChat: Flow<Boolean> get() = repo.shouldFetchChat.receiveAsFlow()
+    private var isSent = false
+    init {
+        viewModelScope.launch {
+            launch { repo.uiState.collect {
+                _uiState.value = it
+                if (!it.isLoading && isSent){
+                    _text.value = ""
+                    isSent = false
+                }
+            } }
 
+            launch { text.collect { repo.setTypingState(it.isNotEmpty()) } }
+        }
+    }
     fun sync(chatId: String){
-        if (chatId.isEmpty()) return
+        if (chatId.isBlank()) return
         repo.sync(chatId)
     }
     fun setText(s: String){
-        repo.setTypingState(s.isNotEmpty())
-        _text.value = s
+        if (!_uiState.value.isLoading) {
+            _text.value = s
+            repo.setTypingState(s.isNotEmpty())
+        }
     }
 
     fun send(){
         if (_text.value.isNotBlank()) {
             repo.send(MessageUtility.filterText(_text.value))
-        }
-    }
-
-    init {
-        viewModelScope.launch {
-            launch { repo.uiState.collect {
-                _uiState.value = it
-                if (!it.isLoading){
-                    _text.value = ""
-                }
-            } }
-
-            launch { text.collect {  repo.setTypingState(it.isNotEmpty()) } }
+            isSent = true
         }
     }
 

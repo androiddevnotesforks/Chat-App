@@ -66,10 +66,8 @@ class ChatsRepo @Inject constructor(
             .whereArrayContains("ids",uid)
             .get().addOnCompleteListener { task ->
                 if (task.isSuccessful){
-                    Log.e("id",uid+task.result.isEmpty)
                     for (document in task.result.documents){
                         val chat = document.toObject(ChatModel::class.java)
-                        Log.e("id_caht",Gson().toJson(chat))
                         if (chat != null){
                            saveChatToDb(uid = uid, chat = chat)
                         }

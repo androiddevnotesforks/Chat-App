@@ -4,6 +4,7 @@ import androidx.annotation.NonNull
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.devwarex.chatapp.utility.MessageState
 import com.devwarex.chatapp.utility.MessageType
 
 @Entity(tableName = "chat_messages_table")
@@ -14,5 +15,6 @@ data class Message(
     @NonNull @ColumnInfo(name = "sender_name") val name: String,
     @NonNull @ColumnInfo(name = "sender_id") val senderId: String,
     @NonNull @ColumnInfo(name = "timestamp") val timestamp: Long,
-    @NonNull @ColumnInfo(name = "message_type") val type: MessageType
+    @NonNull @ColumnInfo(name = "message_type") val type: MessageType,
+    @NonNull @ColumnInfo(name = "message_state") var state: MessageState
 )

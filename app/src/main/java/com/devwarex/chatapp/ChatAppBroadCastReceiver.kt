@@ -2,7 +2,6 @@ package com.devwarex.chatapp
 
 import android.accessibilityservice.AccessibilityService
 import android.annotation.SuppressLint
-import android.app.ActivityManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -13,8 +12,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Build
 import android.util.Log
-import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.devwarex.chatapp.ui.chat.ChatsActivity
@@ -43,7 +40,7 @@ class ChatAppBroadCastReceiver: BroadcastReceiver() {
         }
     }
 
-    @SuppressLint("CheckResult", "ObsoleteSdkInt", "UnspecifiedImmutableFlag")
+    @SuppressLint("CheckResult", "ObsoleteSdkInt")
     private fun notify(context: Context,payload: Map<String,String?>,currentChatId: String) {
         Log.e("TAG_BROAD_CHAT","notify broad cast")
             val title: String = payload["title"] ?: ""
@@ -58,7 +55,7 @@ class ChatAppBroadCastReceiver: BroadcastReceiver() {
             }
             val defaultPendingIntent = PendingIntent.getActivity(
                 context, 0,
-                defaultIntent, PendingIntent.FLAG_UPDATE_CURRENT
+                defaultIntent, PendingIntent.FLAG_IMMUTABLE
             )
             var bitmap: Bitmap? = null
             if(context.resources != null){

@@ -15,6 +15,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ChatApp">
 
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-2512609943608786~8810830528"/>
+
         <receiver android:name=".ChatAppBroadCastReceiver"  android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>

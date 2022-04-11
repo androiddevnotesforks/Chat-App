@@ -3,6 +3,7 @@ package com.devwarex.chatapp.ui.conversation
 import com.devwarex.chatapp.db.AppDao
 import com.devwarex.chatapp.db.Message
 import com.devwarex.chatapp.models.MessageModel
+import com.devwarex.chatapp.utility.MessageState
 import com.devwarex.chatapp.utility.Paths
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.ktx.firestore
@@ -32,7 +33,8 @@ class MessagesRepo @Inject constructor(
                                     timestamp = message.timestamp.time,
                                     name = message.name,
                                     type = message.type,
-                                    chatId = message.chatId
+                                    chatId = message.chatId,
+                                    state = message.state
                                 )).subscribeOn(Schedulers.computation())
                                     .subscribe()
                             }

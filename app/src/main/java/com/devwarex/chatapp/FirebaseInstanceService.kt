@@ -52,7 +52,7 @@ class FirebaseInstanceService : FirebaseMessagingService() {
         }
     }
 
-    @SuppressLint("CheckResult", "UnspecifiedImmutableFlag", "ObsoleteSdkInt")
+    @SuppressLint("CheckResult", "ObsoleteSdkInt")
     private fun notify(remote: RemoteMessage) {
         Log.e("TAG_BROAD_CHAT","notify message service")
 
@@ -68,7 +68,7 @@ class FirebaseInstanceService : FirebaseMessagingService() {
             defaultIntent.action = AccessibilityService.SERVICE_INTERFACE
             val defaultPendingIntent = PendingIntent.getActivity(
                 this, 0,
-                defaultIntent, PendingIntent.FLAG_UPDATE_CURRENT
+                defaultIntent, PendingIntent.FLAG_IMMUTABLE
             )
             var bitmap: Bitmap? = null
             if(this.resources != null){

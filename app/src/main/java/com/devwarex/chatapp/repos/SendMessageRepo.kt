@@ -1,20 +1,26 @@
 package com.devwarex.chatapp.repos
 
+import com.devwarex.chatapp.db.AppDao
+import com.devwarex.chatapp.db.AppRoomDatabase
 import com.devwarex.chatapp.models.MessageModel
 import com.devwarex.chatapp.models.MessageNotificationModel
 import com.devwarex.chatapp.models.MessageNotifyDataModel
+import com.devwarex.chatapp.utility.MessageState
 import com.devwarex.chatapp.utility.MessageType
 import com.devwarex.chatapp.utility.Paths
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import io.reactivex.rxjava3.schedulers.Schedulers
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-class SendMessageRepo @Inject constructor() {
+class SendMessageRepo @Inject constructor(
+    private val database: AppDao
+) {
     private val db = Firebase.firestore
     val isLoading = Channel<Boolean>()
     private val job = CoroutineScope(Dispatchers.Unconfined)
@@ -34,7 +40,8 @@ class SendMessageRepo @Inject constructor() {
                     type = MessageType.TEXT,
                     body = text,
                     name = name,
-                    chatId = chatId
+                    chatId = chatId,
+                    state = MessageState.SENT
                 )
             ).addOnCompleteListener { job.launch {
                 isLoading.send(!it.isSuccessful) }
@@ -46,13 +53,21 @@ class SendMessageRepo @Inject constructor() {
                             data = MessageNotifyDataModel(
                                 title = name,
                                 id = chatId,
-                                body = if (text.length > 15) text.take(15) + "..." else text
+                                body = if (text.length > 28) text.take(28) + "..." else text
                             )
                         )
                     )
                 }
             }
             .addOnFailureListener { job.launch { isLoading.send(false) } }
+    }
+
+
+    fun updateMessageState(id: String){
+        db.collection(Paths.MESSAGES)
+            .document(id)
+            .update("state",MessageState.DELIVERED)
+            .addOnCompleteListener {  }
     }
 
     private fun updateLastMessage(chatId: String,lastMessage: String){

@@ -2,13 +2,11 @@ package com.devwarex.chatapp.ui.chat
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -21,8 +19,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.AlignmentLine
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.painterResource
@@ -31,6 +27,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.lifecycleScope
 import coil.compose.rememberImagePainter
@@ -40,7 +37,7 @@ import com.devwarex.chatapp.ui.conversation.ConversationActivity
 import com.devwarex.chatapp.ui.signUp.ErrorsState
 import com.devwarex.chatapp.ui.theme.ChatAppTheme
 import com.devwarex.chatapp.utility.BroadCastUtility
-import com.google.gson.Gson
+import com.google.android.gms.ads.*
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -50,6 +47,8 @@ class ChatsActivity : ComponentActivity() {
     private val viewModel:  ChatsViewModel by viewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        MobileAds.initialize(this)
+
         setContent {
             ChatAppTheme {
                 Surface(
@@ -74,6 +73,54 @@ class ChatsActivity : ComponentActivity() {
             }
         }
 
+       /* var adRequest = AdRequest.Builder().build()
+
+        RewardedAd.load(this,"ca-app-pub-2512609943608786/9707272930", adRequest,
+            object : RewardedAdLoadCallback() {
+            override fun onAdFailedToLoad(adError: LoadAdError) {
+                Log.d(TAG, adError?.message)
+                mRewardedAd = null
+            }
+
+            override fun onAdLoaded(rewardedAd: RewardedAd) {
+                Log.d(TAG, "Ad was loaded.")
+                mRewardedAd = rewardedAd
+            }
+        })
+        setFull()
+        if (mRewardedAd != null) {
+            mRewardedAd?.show(this, OnUserEarnedRewardListener() {
+                fun onUserEarnedReward(rewardItem: RewardItem) {
+                    var rewardAmount = rewardItem.amount
+                    var rewardType = rewardItem.getType()
+                    Log.d(TAG, "User earned the reward. $rewardAmount , $rewardType")
+                }
+            })
+        } else {
+            Log.d(TAG, "The rewarded ad wasn't ready yet.")
+        }
+
+    }
+
+    private fun setFull(){
+        mRewardedAd?.fullScreenContentCallback = object: FullScreenContentCallback() {
+            override fun onAdShowedFullScreenContent() {
+                // Called when ad is shown.
+                Log.d(TAG, "Ad was shown.")
+            }
+
+            override fun onAdFailedToShowFullScreenContent(adError: AdError?) {
+                // Called when ad fails to show.
+                Log.d(TAG, "Ad failed to show.")
+            }
+
+            override fun onAdDismissedFullScreenContent() {
+                // Called when ad is dismissed.
+                // Set the ad reference to null so you don't show the ad a second time.
+                Log.d(TAG, "Ad was dismissed.")
+                mRewardedAd = null
+            }
+        }*/
     }
 
     private fun updateUiOnEmailError(state: ErrorsState){
@@ -109,10 +156,20 @@ class ChatsActivity : ComponentActivity() {
 }
 
 @Composable
+fun AdVMob(){
+    AndroidView(factory = {
+        AdView(it).apply {
+            adSize = AdSize.BANNER
+            adUnitId = "ca-app-pub-3940256099942544/6300978111"
+            loadAd(AdRequest.Builder().build())
+        }
+    })
+}
+
+@Composable
 fun ChatsScreen(modifier: Modifier = Modifier){
     val viewModel: ChatsViewModel = hiltViewModel()
     val (chats,isLoading,showDialog) = viewModel.uiState.collectAsState().value
-    Log.e("chats_$showDialog",Gson().toJson(chats))
     Scaffold(
         topBar = {
             TopAppBar(
@@ -125,6 +182,7 @@ fun ChatsScreen(modifier: Modifier = Modifier){
         }},
         floatingActionButtonPosition = FabPosition.End
     ) {
+
 
         if (showDialog){
             AddUserDialog()
@@ -174,7 +232,9 @@ fun AddUserDialog(){
                 OutlinedTextField(
                     value = email,
                     onValueChange = { viewModel.setEmail(it) },
-                    modifier = Modifier.padding(all = 24.dp).align(Alignment.CenterHorizontally),
+                    modifier = Modifier
+                        .padding(all = 24.dp)
+                        .align(Alignment.CenterHorizontally),
                     label = { Text(text = stringResource(id = R.string.email_title)) },
                     placeholder = { Text(text = stringResource(id = R.string.enter_email_title))},
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),

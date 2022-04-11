@@ -1,6 +1,5 @@
 package com.devwarex.chatapp.ui.conversation
 
-
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -28,15 +27,21 @@ import androidx.compose.ui.res.stringResource
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.lifecycleScope
 import coil.compose.rememberImagePainter
 import com.devwarex.chatapp.R
 import com.devwarex.chatapp.db.Message
+import com.devwarex.chatapp.ui.chat.ChatsActivity
 import com.devwarex.chatapp.ui.theme.LightBlack
 import com.devwarex.chatapp.ui.theme.LightBlue
 import com.devwarex.chatapp.utility.BroadCastUtility
 import com.devwarex.chatapp.utility.BroadCastUtility.Companion.CHAT_ID
 import com.devwarex.chatapp.utility.DateUtility
+import com.devwarex.chatapp.utility.MessageState
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 
 
 @AndroidEntryPoint
@@ -46,7 +51,6 @@ class ConversationActivity : ComponentActivity() {
     private val viewModel by viewModels<MessagesViewModel>()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        //window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         setContent {
             ChatAppTheme {
                 Surface(
@@ -55,6 +59,10 @@ class ConversationActivity : ComponentActivity() {
                 ) { MainLayoutScreen() }
             }
         }
+        lifecycleScope.launchWhenCreated {
+            launch { viewModel.shouldFetchChat.collect { if (it) returnToChat() } }
+        }
+
     }
 
     override fun onResume() {
@@ -82,6 +90,22 @@ class ConversationActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         viewModel.removeListener()
+    }
+
+    private fun returnToChat(){
+        if (isTaskRoot){
+            val intent = Intent(this,ChatsActivity::class.java)
+            startActivity(intent)
+            finish()
+        }else{
+            finish()
+        }
+        lifecycleScope.cancel()
+    }
+
+    override fun onBackPressed() {
+        super.onBackPressed()
+        returnToChat()
     }
 }
 
@@ -228,14 +252,29 @@ fun ReceiveMessageCard(msg: Message,modifier: Modifier) {
                 style = MaterialTheme.typography.body1,
                 modifier = Modifier.padding(all = 4.dp)
             )
-            Text(
-                text = DateUtility.getDate(msg.timestamp),
-                style = MaterialTheme.typography.caption,
-                modifier = Modifier
-                    .align(Alignment.End)
-                    .padding(all = 2.dp),
-                color = Color.LightGray
-            )
+            Row(modifier = Modifier
+                .align(Alignment.Start)
+                .padding(all = 2.dp),) {
+                Text(
+                    text = DateUtility.getDate(msg.timestamp),
+                    style = MaterialTheme.typography.caption,
+                    color = Color.Gray
+                )
+                if (msg.state == MessageState.SENT)
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_sent),
+                        tint =  Color.Gray,
+                        modifier = Modifier.size(18.dp).padding(all = 2.dp),
+                        contentDescription = "Sent"
+                    )
+                else
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_delivered),
+                        tint =  Color.Gray,
+                        modifier = Modifier.size(18.dp).padding(all = 2.dp),
+                        contentDescription = "Delivered"
+                    )
+            }
         }
     }
 }
@@ -261,14 +300,29 @@ fun SenderMessageCard(msg: Message,modifier: Modifier){
                 modifier = Modifier.padding(all = 4.dp),
                 color = LightBlack
             )
-            Text(
-                text = DateUtility.getDate(msg.timestamp),
-                style = MaterialTheme.typography.caption,
-                modifier = Modifier
-                    .align(Alignment.Start)
-                    .padding(all = 2.dp),
-                color = Color.Gray
-            )
+            Row(modifier = Modifier
+                .align(Alignment.End)
+                .padding(all = 2.dp),) {
+                Text(
+                    text = DateUtility.getDate(msg.timestamp),
+                    style = MaterialTheme.typography.caption,
+                    color = Color.Gray
+                )
+                if (msg.state == MessageState.SENT) 
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_sent),
+                        tint =  Color.Gray,
+                        modifier = Modifier.size(18.dp).padding(all = 2.dp),
+                        contentDescription = "Sent"
+                    )
+                else
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_delivered),
+                        tint =  Color.Gray,
+                        modifier = Modifier.size(18.dp).padding(all = 2.dp),
+                        contentDescription = "Delivered"
+                    )
+            }
         }
     }
 }

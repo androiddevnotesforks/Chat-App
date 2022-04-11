@@ -26,7 +26,6 @@ class UserByIdRepo @Inject constructor() {
                 if (task.isSuccessful && task.result.exists()){
                     val userModel: UserModel? = task.result.toObject(UserModel::class.java)
                     if (userModel != null){
-                        Log.e("user",Gson().toJson(userModel))
                         CoroutineScope(Dispatchers.Unconfined)
                             .launch { user.send(userModel) }
                     }

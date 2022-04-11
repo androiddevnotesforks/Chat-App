@@ -1,9 +1,13 @@
 package com.devwarex.chatapp.ui.conversation
 
+import android.util.Log
 import com.devwarex.chatapp.db.AppDao
+import com.devwarex.chatapp.db.Message
 import com.devwarex.chatapp.models.UserModel
 import com.devwarex.chatapp.repos.SendMessageRepo
 import com.devwarex.chatapp.repos.UserByIdRepo
+import com.devwarex.chatapp.utility.MessageState
+import com.devwarex.chatapp.utility.MessageType
 import com.devwarex.chatapp.utility.Paths
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.database.DataSnapshot
@@ -14,11 +18,14 @@ import com.google.firebase.database.ktx.getValue
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import java.util.*
 import javax.inject.Inject
 
 class ConversationRepo @Inject constructor(
@@ -35,20 +42,34 @@ class ConversationRepo @Inject constructor(
     private var chatId: String = ""
     private val dbRef = Firebase.database(Paths.DATABASE_URL).reference
     private var currentUid: String = ""
+    val shouldFetchChat = Channel<Boolean>()
+    private val job = CoroutineScope(Dispatchers.Unconfined)
+    private val chatJob = CoroutineScope(Dispatchers.Default)
 
     fun sync(id: String){
         currentUid = Firebase.auth.uid ?: ""
         chatId = id
         repo.sync(chatId = chatId)
         userRepo.getUser(currentUid)
-        CoroutineScope(Dispatchers.Unconfined).launch {
-            launch { database.getMessages(chatId = chatId).collect { _uiState.value = _uiState.value.copy(uid = currentUid, messages = it) } }
-            launch { database.getChatByChatId(chatId).collect {
+        job.launch {
+            launch { database.getMessages(chatId = chatId).collect {
+                _uiState.value = _uiState.value.copy(uid = currentUid, messages = it, isLoading = false)
+                checkForUnDeliveredMessages(it)
+            } }
+        }
+        chatJob.launch { database.getChatByChatId(chatId).collect {
+            if (it == null){
+                launch {
+                    shouldFetchChat.send(true)
+                    job.cancel()
+                }
+            }else {
                 _uiState.value = _uiState.value.copy(chat = it.chat, receiverUser = it.user)
                 userRepo.getTokenByUserId(it.user?.uid ?: "")
                 initDataBase(it.user?.uid ?: "")
-            } }
-        }
+                chatJob.cancel()
+            }
+        } }
     }
     init {
         CoroutineScope(Dispatchers.Unconfined).launch {
@@ -68,6 +89,14 @@ class ConversationRepo @Inject constructor(
                 token = token,
                 availability = _uiState.value.availability
             )
+        }
+    }
+
+    private fun checkForUnDeliveredMessages(msgs: List<Message>){
+        msgs.forEach {
+            if (it.state == MessageState.SENT && it.senderId != currentUid){
+                sendMessageRepo.updateMessageState(it.id)
+            }
         }
     }
 
@@ -108,6 +137,8 @@ class ConversationRepo @Inject constructor(
         repo.removeListener()
         dbRef.removeEventListener(availabilityListener)
         dbRef.removeEventListener(typingListener)
+        job.cancel()
+        chatJob.cancel()
     }
 
     fun setAvailability(b: Boolean){

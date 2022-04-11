@@ -10,5 +10,5 @@ data class MessagesRelations(
         parentColumn = "chat_id",
         entityColumn = "id"
     )
-    val chat: Chat
+    val chat: Chat?
 )
