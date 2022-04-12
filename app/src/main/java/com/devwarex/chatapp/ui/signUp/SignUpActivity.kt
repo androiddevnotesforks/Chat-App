@@ -28,6 +28,7 @@ import com.devwarex.chatapp.ui.conversation.ConversationActivity
 import com.devwarex.chatapp.ui.theme.ChatAppTheme
 import com.devwarex.chatapp.ui.theme.DarkBackground
 import com.devwarex.chatapp.ui.theme.LightBlue
+import com.devwarex.chatapp.ui.verify.VerifyActivity
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -49,7 +50,7 @@ class SignUpActivity : ComponentActivity() {
         val viewModel: SignUpViewModel by viewModels()
         viewModel.isSucceed.observe(this){
             if (it) {
-                val homeIntent = Intent(this, MainActivity::class.java)
+                val homeIntent = Intent(this, VerifyActivity::class.java)
                 startActivity(homeIntent)
                 finish()
             }
@@ -326,11 +327,11 @@ fun ConfirmPasswordEditText(
         }
     }
 }
-
+/*
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
     ChatAppTheme {
         SignUpScreen()
     }
-}
+}*/

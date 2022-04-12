@@ -13,46 +13,65 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.lifecycle.lifecycleScope
 import com.devwarex.chatapp.R
+import com.devwarex.chatapp.repos.UserByIdRepo
 import com.devwarex.chatapp.ui.chat.ChatsActivity
 import com.devwarex.chatapp.ui.conversation.ConversationActivity
 import com.devwarex.chatapp.ui.signUp.SignUpActivity
+import com.devwarex.chatapp.ui.theme.ChatAppTheme
+import com.devwarex.chatapp.ui.verify.VerifyActivity
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            Surface(
-                modifier = Modifier.fillMaxSize(),
-                color = MaterialTheme.colors.background
-            ) {
-               Screen()
+            ChatAppTheme() {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colors.background
+                ) {
+                    Screen()
+                }
             }
         }
-
+        val repo = UserByIdRepo()
         val user = Firebase.auth.currentUser
-        if (user == null){
+        if (user == null) {
             val signUp = Intent(this, RegistrationActivity::class.java)
             startActivity(signUp)
             finish()
-        }else{
-            val homeIntent = Intent(this, ChatsActivity::class.java)
-                .putExtra("chat_id","testing chat id ya rab")
-            startActivity(homeIntent)
-            finish()
+        } else {
+            repo.getUser(user.uid)
+            lifecycleScope.launchWhenCreated {
+                launch { repo.user.receiveAsFlow().collect {
+                    if (it.verified){
+                        val homeIntent = Intent(this@MainActivity, ChatsActivity::class.java)
+                        startActivity(homeIntent)
+                        finish()
+                    }else{
+                        val verifyIntent = Intent(this@MainActivity, VerifyActivity::class.java)
+                        startActivity(verifyIntent)
+                        finish()
+                    }
+                } }
+            }
         }
     }
 
-
+}
     @Composable
     fun Screen(modifier: Modifier = Modifier){
 
         CustomLayout(modifier = modifier) {
             Text(
-                text = stringResource(id = R.string.email_exist_message),
+                text = stringResource(id = R.string.app_name),
                 color = MaterialTheme.colors.primary,
                 style = MaterialTheme.typography.h3,
                 modifier = modifier,
@@ -86,4 +105,3 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}

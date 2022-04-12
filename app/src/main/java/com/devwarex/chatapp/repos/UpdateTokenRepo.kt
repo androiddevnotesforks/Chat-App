@@ -18,7 +18,7 @@ class UpdateTokenRepo {
                 }
             }
         }
-        private fun setDeviceToken(uid: String,token: String){
+        fun setDeviceToken(uid: String,token: String){
             if (uid.isNotEmpty()){
                 val map:Map<String,String> = mapOf("token" to token)
                 Firebase.firestore.collection(Paths.TOKENS)

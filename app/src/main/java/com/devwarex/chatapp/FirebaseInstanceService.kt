@@ -6,23 +6,19 @@ import android.app.ActivityManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
-import android.content.IntentFilter
-import android.content.pm.VersionedPackage
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.net.ConnectivityManager
 import android.os.Build
-import android.system.Os
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.devwarex.chatapp.repos.UpdateTokenRepo
 import com.devwarex.chatapp.ui.chat.ChatsActivity
 import com.devwarex.chatapp.ui.conversation.ConversationActivity
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 
@@ -31,6 +27,7 @@ class FirebaseInstanceService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
+        UpdateTokenRepo.setDeviceToken(uid = Firebase.auth.uid ?: "", token = token)
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
@@ -119,8 +116,5 @@ class FirebaseInstanceService : FirebaseMessagingService() {
 
                 notificationManager.notify(1002, mBuilder.build())
             }
-
-
-
     }
 }
