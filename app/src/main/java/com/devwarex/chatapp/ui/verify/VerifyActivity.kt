@@ -17,7 +17,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -195,7 +194,7 @@ fun VerifyScreen(modifier: Modifier = Modifier){
         val phone = viewModel.phone.collectAsState()
         Row() {
             Text(
-                text = "+2",
+                text = "EG +2",
                 modifier = modifier
                     .padding(start = 16.dp)
                     .align(Alignment.CenterVertically),
@@ -206,7 +205,7 @@ fun VerifyScreen(modifier: Modifier = Modifier){
                 value = phone.value,
                 onValueChange = viewModel::setPhone,
                 singleLine = true,
-                enabled = !sent || !verifying || !success,
+                enabled = !sent && !verifying && !success,
                 colors = TextFieldDefaults.textFieldColors(
                     textColor = MaterialTheme.colors.onSurface,
                     backgroundColor = MaterialTheme.colors.background
@@ -258,7 +257,6 @@ fun VerifyScreen(modifier: Modifier = Modifier){
                 Text(text = "Verify")
             }
         }
-
         if (verifying){
             LinearProgressIndicator(modifier = modifier
                 .align(Alignment.CenterHorizontally)

@@ -278,9 +278,8 @@ fun AddUserDialog(){
         ) {
             Column() {
                 Row() {
-                    OutlinedButton(
+                    IconButton(
                         onClick = { viewModel.hideDialog() },
-                        shape = MaterialTheme.shapes.small.copy(all = CornerSize(4.dp)),
                         modifier = Modifier.wrapContentSize()
                     ) {
                         Icon(painter = painterResource(id = R.drawable.ic_back), contentDescription = "close", tint = MaterialTheme.colors.onSurface )
@@ -370,13 +369,22 @@ fun ChatCard(chat: ChatRelations){
                     modifier = Modifier.padding(start = 8.dp, end = 16.dp),
                     maxLines = 1
                 )
-                Text(
-                    text = chat.chat.lastMessage,
-                    style = MaterialTheme.typography.caption,
-                    modifier = Modifier.padding(start = 8.dp, top = 2.dp),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row() {
+                    if (chat.chat.lastMessage == "IMAGE") {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_photo),
+                            contentDescription ="photo label",
+                            modifier = Modifier.padding(start = 8.dp, top = 2.dp).size(16.dp)
+                        )
+                    }
+                    Text(
+                        text = if (chat.chat.lastMessage == "IMAGE") stringResource(id = R.string.photo_name) else chat.chat.lastMessage,
+                        style = MaterialTheme.typography.caption,
+                        modifier = Modifier.padding(start = 8.dp, top = 2.dp).align(Alignment.CenterVertically),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
         }
     }

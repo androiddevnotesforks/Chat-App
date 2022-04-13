@@ -1,6 +1,9 @@
 package com.devwarex.chatapp.ui.conversation
 
 
+import android.graphics.Bitmap
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,6 +22,11 @@ class MessagesViewModel @Inject constructor(
     val text: StateFlow<String> get() = _text
     val shouldFetchChat: Flow<Boolean> get() = repo.shouldFetchChat.receiveAsFlow()
     private var isSent = false
+    private val _insert = MutableLiveData<Boolean>()
+    private val _backState = MutableLiveData<BackButtonState>(BackButtonState())
+    val backState: LiveData<BackButtonState> get() = _backState
+    val insert: LiveData<Boolean> get() = _insert
+    val uploadProgress: StateFlow<Int> get() = repo.uploadProgress
     init {
         viewModelScope.launch {
             launch { repo.uiState.collect {
@@ -57,5 +65,39 @@ class MessagesViewModel @Inject constructor(
     fun onStop(){
         repo.setTypingState(false)
         repo.setAvailability(false)
+    }
+
+    fun setBitmap(bitmap: Bitmap){
+        _uiState.value = _uiState.value.copy(bitmap = bitmap, previewBeforeSending = true)
+        _backState.value = _backState.value?.copy(isPreviewBeforeSending = true)
+    }
+
+    fun insertPhoto(){
+        _insert.value = true
+    }
+
+    fun removeInsertPhoto(){
+        _insert.value = false
+    }
+    fun onPreviewImage(img: String){
+        _uiState.value = _uiState.value.copy(previewImage = img, isPreviewImage = true)
+        _backState.value = _backState.value?.copy(isImagePreview = true)
+    }
+
+    fun closePreviewImageForSending(){
+        _uiState.value = _uiState.value.copy(previewBeforeSending = false, bitmap = null)
+        _backState.value = _backState.value?.copy(isPreviewBeforeSending = false)
+        repo.zeroProgress()
+    }
+
+    fun closePreviewImage(){
+        _uiState.value = _uiState.value.copy(previewImage = "", isPreviewImage = false)
+        _backState.value = _backState.value?.copy(isImagePreview = false)
+    }
+
+    fun sendImage(){
+        if (_uiState.value.bitmap != null){
+            repo.sendImage(_uiState.value.bitmap!!)
+        }
     }
 }

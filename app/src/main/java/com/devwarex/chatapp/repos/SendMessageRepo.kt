@@ -63,6 +63,44 @@ class SendMessageRepo @Inject constructor(
     }
 
 
+    fun sendImageMessage(
+        chatId: String,
+        uid: String,
+        url: String,
+        name: String,
+        token: String,
+        availability: Boolean
+    ){
+        job.launch { isLoading.send(true) }
+        db.collection(Paths.MESSAGES)
+            .add(
+                MessageModel(
+                    senderId = uid,
+                    type = MessageType.IMAGE,
+                    body = url,
+                    name = name,
+                    chatId = chatId,
+                    state = MessageState.SENT
+                )
+            ).addOnCompleteListener { job.launch {
+                isLoading.send(!it.isSuccessful) }
+                updateLastMessage(chatId = chatId, lastMessage = "IMAGE")
+                if (token.isNotEmpty() && !availability) {
+                    PushNotificationRepo.push(
+                        fcm = MessageNotificationModel(
+                            to = token,
+                            data = MessageNotifyDataModel(
+                                title = name,
+                                id = chatId,
+                                body = "sent photo"
+                            )
+                        )
+                    )
+                }
+            }
+            .addOnFailureListener { job.launch { isLoading.send(false) } }
+    }
+
     fun updateMessageState(id: String){
         db.collection(Paths.MESSAGES)
             .document(id)

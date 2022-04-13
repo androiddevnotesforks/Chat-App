@@ -1,5 +1,6 @@
 package com.devwarex.chatapp.ui.conversation
 
+import android.graphics.Bitmap
 import android.util.Log
 import com.devwarex.chatapp.db.AppDao
 import com.devwarex.chatapp.db.Message
@@ -32,7 +33,8 @@ class ConversationRepo @Inject constructor(
     private val userRepo: UserByIdRepo,
     private val database: AppDao,
     private val sendMessageRepo: SendMessageRepo,
-    private val repo: MessagesRepo
+    private val repo: MessagesRepo,
+    private val uploadImageRepo: UploadImageRepo
 ) {
 
     private var currentUser: UserModel? = null
@@ -45,6 +47,7 @@ class ConversationRepo @Inject constructor(
     val shouldFetchChat = Channel<Boolean>()
     private val job = CoroutineScope(Dispatchers.Unconfined)
     private val chatJob = CoroutineScope(Dispatchers.Default)
+    val uploadProgress = uploadImageRepo.uploadProgress
 
     fun sync(id: String){
         currentUid = Firebase.auth.uid ?: ""
@@ -76,7 +79,28 @@ class ConversationRepo @Inject constructor(
             launch { sendMessageRepo.isLoading.receiveAsFlow().collect { _uiState.value = _uiState.value.copy(isLoading = it, enable = !it) } }
             launch { userRepo.token.receiveAsFlow().collect { token = it } }
             launch { userRepo.user.receiveAsFlow().collect { currentUser = it } }
+            launch { uploadImageRepo.img.receiveAsFlow().collect {
+                if (it.isNotEmpty()){
+                    sendMessageRepo.sendImageMessage(
+                        uid = currentUser?.uid ?: "",
+                        name = currentUser?.name ?: "",
+                        url = it,
+                        chatId = chatId,
+                        token = token,
+                        availability = _uiState.value.availability
+                    )
+                    launch { uploadImageRepo.img.send("") }
+                }
+            } }
         }
+    }
+
+    fun sendImage(bitmap: Bitmap){
+        uploadImageRepo.upload(bitmap = bitmap)
+    }
+
+    fun zeroProgress(){
+        uploadImageRepo.uploadProgress.value = 0
     }
 
     fun send(text: String){
