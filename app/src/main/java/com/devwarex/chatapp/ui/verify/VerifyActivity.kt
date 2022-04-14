@@ -3,6 +3,7 @@ package com.devwarex.chatapp.ui.verify
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -34,10 +35,12 @@ import com.google.firebase.auth.PhoneAuthOptions
 import com.google.firebase.auth.PhoneAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+import com.google.gson.Gson
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
+
 
 @AndroidEntryPoint
 class VerifyActivity : ComponentActivity() {
@@ -66,7 +69,7 @@ class VerifyActivity : ComponentActivity() {
             // This callback is invoked in an invalid request for verification is made,
             // for instance if the the phone number format is not valid.
             Log.e("TAG", "onVerificationFailed", e)
-
+            Log.e("sms","${e.message}")
             if (e is FirebaseAuthInvalidCredentialsException) {
                 // Invalid request
             } else if (e is FirebaseTooManyRequestsException) {
@@ -112,11 +115,18 @@ class VerifyActivity : ComponentActivity() {
             launch {
                 viewModel.uistate.collect {
                     if (it.requestingCode){
-                        launch { viewModel.phone.collect { phone -> verifying(phone)} }
+                        viewModel.phoneNumber.observe(this@VerifyActivity){ phone ->
+                            verifying(phone)
+                            viewModel.phoneNumber.removeObservers(this@VerifyActivity)
+                        }
                     }
 
                     if (it.verifying){
-                        launch { viewModel.code.collect { code -> verifyWithCredential(code) } }
+                        viewModel.codeNumber.observe(this@VerifyActivity){ code ->
+                            Log.e("code",code)
+                            verifyWithCredential(code = code)
+                            viewModel.codeNumber.removeObservers(this@VerifyActivity)
+                        }
                     }
                 }
             }
@@ -133,15 +143,34 @@ class VerifyActivity : ComponentActivity() {
     private fun linkWithPhoneAuthCredential(){
         Firebase.auth.currentUser!!.linkWithCredential(mCredential)
             .addOnCompleteListener { task ->
-                if (task.isSuccessful) viewModel.onSuccess()
-                viewModel.verifyAccount()
-            }.addOnFailureListener { Log.e("link","account: ${it.message}") }
+                if (task.isSuccessful && task.result != null){
+                    viewModel.onSuccess()
+                    viewModel.verifyAccount()
+                    Log.e("user","Verify!")
+                }else{
+                    Log.e("user","null")
+                }
+            }.addOnFailureListener {
+                when(it.message){
+                    WRONG_CODE_MESSAGE -> {
+                        viewModel.onWrongCode()
+                        Toast.makeText(this, getString(R.string.wrong_code),Toast.LENGTH_LONG).show()
+                    }
+                    PHONE_LINKED_TO_ANOTHER_EMAIL_MESSAGE -> {
+                        viewModel.onPhoneIsWrong()
+                        Toast.makeText(this, getString(R.string.wrong_phone_message),Toast.LENGTH_LONG).show()
+                    }
+                    else ->  Log.e("link","account: ${it.message}")
+                }
+            }
     }
 
 
     private fun verifyWithCredential(code: String){
-        mCredential = PhoneAuthProvider.getCredential(storedVerificationId,code)
-        linkWithPhoneAuthCredential()
+        if (storedVerificationId.isNotEmpty() && code.isNotBlank()) {
+            mCredential = PhoneAuthProvider.getCredential(storedVerificationId, code)
+            linkWithPhoneAuthCredential()
+        }
     }
 
     private fun updateUi(b: Boolean){
@@ -150,6 +179,11 @@ class VerifyActivity : ComponentActivity() {
             startActivity(homeIntent)
             finish()
         }
+    }
+
+    companion object{
+        const val WRONG_CODE_MESSAGE: String = "The sms verification code used to create the phone auth credential is invalid. Please resend the verification code sms and be sure use the verification code provided by the user."
+        const val PHONE_LINKED_TO_ANOTHER_EMAIL_MESSAGE: String = "This credential is already associated with a different user account."
     }
 
 }
@@ -251,7 +285,7 @@ fun VerifyScreen(modifier: Modifier = Modifier){
             )
             Spacer(modifier = modifier.height(16.dp))
             Button(
-                onClick = {viewModel.onVerify() },
+                onClick = { viewModel.onVerify() },
                 colors =ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.secondary) ,
                 modifier = modifier.align(Alignment.CenterHorizontally)) {
                 Text(text = "Verify")

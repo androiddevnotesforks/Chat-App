@@ -2,9 +2,6 @@ package com.devwarex.chatapp.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple200 = Color(0xFFBB86FC)
-val Purple500 = Color(0xFF6200EE)
-val Purple700 = Color(0xFF3700B3)
 val LightBlue = Color(0xFFBBDEFB)
 val DarkBlue = Color(0xFF82B1FF)
 val Blue200 = Color(0xFF90CAF9)

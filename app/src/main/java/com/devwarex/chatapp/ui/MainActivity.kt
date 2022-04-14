@@ -51,7 +51,7 @@ class MainActivity : ComponentActivity() {
             repo.getUser(user.uid)
             lifecycleScope.launchWhenCreated {
                 launch { repo.user.receiveAsFlow().collect {
-                    if (it.verified){
+                    if (it.verified && user.phoneNumber != null){
                         val homeIntent = Intent(this@MainActivity, ChatsActivity::class.java)
                         startActivity(homeIntent)
                         finish()
@@ -69,12 +69,12 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun Screen(modifier: Modifier = Modifier){
 
-        CustomLayout(modifier = modifier) {
+        CustomLayout() {
             Text(
                 text = stringResource(id = R.string.app_name),
                 color = MaterialTheme.colors.primary,
                 style = MaterialTheme.typography.h3,
-                modifier = modifier,
+                modifier = modifier.wrapContentSize(),
                 fontWeight = FontWeight.Bold
             )
         }
@@ -90,7 +90,7 @@ class MainActivity : ComponentActivity() {
         content: @Composable () -> Unit
     ){
         Layout(
-            modifier = modifier,
+            modifier = modifier.fillMaxWidth(),
             content = content
         ){ measurables, constraints ->
 
@@ -100,7 +100,7 @@ class MainActivity : ComponentActivity() {
 
             layout(constraints.maxWidth, constraints.maxHeight){
                 placeables.forEach { placeable ->
-                    placeable.placeRelative(x = constraints.maxWidth/5, y = constraints.maxHeight/2)
+                    placeable.placeRelative(x = 0, y = 0)
                 }
             }
         }

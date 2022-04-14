@@ -29,6 +29,10 @@ class ChatsViewModel @Inject constructor(
     val emailMessage: StateFlow<ErrorsState> get() = _emailMessage
     val isAdded: Flow<Boolean> get() = repo.isAdded
 
+    fun sync(){
+        repo.sync()
+    }
+
     init {
         viewModelScope.launch {
             launch { repo.uiState.collect { _uiState.value = it } }

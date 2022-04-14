@@ -18,6 +18,7 @@ class UserByIdRepo @Inject constructor() {
     val user = Channel<UserModel>(Channel.UNLIMITED)
     val token = Channel<String>(Channel.UNLIMITED)
     val isVerified = Channel<Boolean>()
+    val isFound = Channel<Boolean>(Channel.UNLIMITED)
     fun getUser(uid: String){
         db.collection(Paths.USERS)
             .document(uid)
@@ -30,6 +31,11 @@ class UserByIdRepo @Inject constructor() {
                             .launch { user.send(userModel) }
                     }
                 }
+
+                CoroutineScope(Dispatchers.Default).launch {
+                    isFound.send(task.isSuccessful && task.result.exists())
+                }
+
             }
     }
 
@@ -40,9 +46,11 @@ class UserByIdRepo @Inject constructor() {
             .document(uid)
             .get(Source.SERVER)
             .addOnCompleteListener { CoroutineScope(Dispatchers.Unconfined).launch {
-                val t: String = it.result.get("token").toString()
-                if (t != "null"){
-                    token.send(t)
+                if (it.isSuccessful && it.result != null) {
+                    val t: String = it.result.get("token").toString()
+                    if (t != "null") {
+                        token.send(t)
+                    }
                 }
             } }
     }

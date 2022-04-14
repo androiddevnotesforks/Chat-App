@@ -227,7 +227,7 @@ fun MainLayoutScreen(modifier: Modifier = Modifier){
             }
         }
     ) {
-        ConstraintLayout(modifier = Modifier.alpha(if (previewBeforeSending || isPreviewImage) 0.6f else 1f)){
+        ConstraintLayout(modifier = Modifier.alpha(if (previewBeforeSending || isPreviewImage) 0.4f else 1f)){
             val ( list , edit ) = createRefs()
             LazyColumn(
                 modifier = modifier

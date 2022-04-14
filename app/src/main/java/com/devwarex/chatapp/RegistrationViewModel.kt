@@ -4,8 +4,10 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.devwarex.chatapp.models.UserModel
 import com.devwarex.chatapp.repos.UpdateTokenRepo
+import com.devwarex.chatapp.repos.UserByIdRepo
 import com.devwarex.chatapp.ui.signUp.SignUpUiState
 import com.devwarex.chatapp.utility.Paths
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
@@ -14,10 +16,15 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class RegistrationViewModel @Inject constructor(): ViewModel(){
+class RegistrationViewModel @Inject constructor(
+    private val userRepo: UserByIdRepo
+): ViewModel(){
 
     private val _signIn = MutableLiveData<Boolean>()
     val signIn: LiveData<Boolean> get() = _signIn
@@ -51,13 +58,36 @@ class RegistrationViewModel @Inject constructor(): ViewModel(){
         Firebase.auth.signInWithCredential(credential)
             .addOnSuccessListener { task ->
                 if (task.user != null){
-                    saveUser(uid = task.user!!.uid, account = account)
+                    userRepo.getUser(uid = task.user?.uid!!)
+                    viewModelScope.launch {
+                        userRepo.isFound.receiveAsFlow().collect {
+                            if(it){
+                                updateUser(uid = task.user?.uid!!,account = account)
+                            }else{
+                                saveUser(uid = task.user!!.uid, account = account)
+                            }
+                        }
+                    }
                 }
 
             }.addOnFailureListener { Log.e("google",it.message!!) }
 
     }
 
+    private fun updateUser(uid: String,account: GoogleSignInAccount){
+        val db = Firebase.firestore
+        val name: String = account.displayName ?: ""
+        val img: String = account.photoUrl.toString()
+        db.collection(Paths.USERS)
+            .document(uid)
+            .update(
+                "name",name,
+                "img",img
+            ).addOnCompleteListener {
+                _isSucceed.value = it.isSuccessful
+                UpdateTokenRepo.updateToken()
+            }
+    }
     private fun saveUser(uid: String,account: GoogleSignInAccount){
         val db = Firebase.firestore
         db.collection(Paths.USERS)

@@ -60,6 +60,9 @@
         <activity android:name=".ui.verify.VerifyActivity"
             android:exported="true"
             android:theme="@style/Theme.ChatApp"/>
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_message" />
         <activity
             android:name=".ui.MainActivity"
             android:exported="true"

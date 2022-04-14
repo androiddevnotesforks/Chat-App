@@ -2,9 +2,6 @@ package com.devwarex.chatapp.ui.chat
 
 import android.content.Intent
 import android.os.Bundle
-import android.telephony.PhoneNumberUtils
-import android.telephony.TelephonyManager
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -22,15 +19,18 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.text.isDigitsOnly
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.lifecycleScope
 import coil.compose.rememberImagePainter
@@ -40,17 +40,12 @@ import com.devwarex.chatapp.ui.conversation.ConversationActivity
 import com.devwarex.chatapp.ui.signUp.ErrorsState
 import com.devwarex.chatapp.ui.theme.ChatAppTheme
 import com.devwarex.chatapp.utility.BroadCastUtility
+import com.devwarex.chatapp.utility.DateUtility
 import com.google.android.gms.ads.*
-import com.google.firebase.FirebaseException
-import com.google.firebase.FirebaseTooManyRequestsException
-import com.google.firebase.auth.*
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import java.util.*
-import java.util.concurrent.TimeUnit
+
 
 @AndroidEntryPoint
 class ChatsActivity : ComponentActivity() {
@@ -64,9 +59,7 @@ class ChatsActivity : ComponentActivity() {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
-                ) {
-                    ChatsScreen()
-                }
+                ) { ChatsScreen() }
             }
         }
         viewModel.chatId.observe(this,this::toConversation)
@@ -82,110 +75,6 @@ class ChatsActivity : ComponentActivity() {
                 } }
             }
         }
-
-       /* var adRequest = AdRequest.Builder().build()
-
-        RewardedAd.load(this,"ca-app-pub-2512609943608786/9707272930", adRequest,
-            object : RewardedAdLoadCallback() {
-            override fun onAdFailedToLoad(adError: LoadAdError) {
-                Log.d(TAG, adError?.message)
-                mRewardedAd = null
-            }
-
-            override fun onAdLoaded(rewardedAd: RewardedAd) {
-                Log.d(TAG, "Ad was loaded.")
-                mRewardedAd = rewardedAd
-            }
-        })
-        setFull()
-        if (mRewardedAd != null) {
-            mRewardedAd?.show(this, OnUserEarnedRewardListener() {
-                fun onUserEarnedReward(rewardItem: RewardItem) {
-                    var rewardAmount = rewardItem.amount
-                    var rewardType = rewardItem.getType()
-                    Log.d(TAG, "User earned the reward. $rewardAmount , $rewardType")
-                }
-            })
-        } else {
-            Log.d(TAG, "The rewarded ad wasn't ready yet.")
-        }
-
-    }
-
-    private fun setFull(){
-        mRewardedAd?.fullScreenContentCallback = object: FullScreenContentCallback() {
-            override fun onAdShowedFullScreenContent() {
-                // Called when ad is shown.
-                Log.d(TAG, "Ad was shown.")
-            }
-
-            override fun onAdFailedToShowFullScreenContent(adError: AdError?) {
-                // Called when ad fails to show.
-                Log.d(TAG, "Ad failed to show.")
-            }
-
-            override fun onAdDismissedFullScreenContent() {
-                // Called when ad is dismissed.
-                // Set the ad reference to null so you don't show the ad a second time.
-                Log.d(TAG, "Ad was dismissed.")
-                mRewardedAd = null
-            }
-        }*/
-    }
-
-    private val callbacks = object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
-
-        override fun onVerificationCompleted(credential: PhoneAuthCredential) {
-            // This callback will be invoked in two situations:
-            // 1 - Instant verification. In some cases the phone number can be instantly
-            //     verified without needing to send or enter a verification code.
-            // 2 - Auto-retrieval. On some devices Google Play services can automatically
-            //     detect the incoming verification SMS and perform verification without
-            //     user action.
-            Log.d("TAG", "onVerificationCompleted:$credential")
-           // signInWithPhoneAuthCredential(credential)
-        }
-
-        override fun onVerificationFailed(e: FirebaseException) {
-            // This callback is invoked in an invalid request for verification is made,
-            // for instance if the the phone number format is not valid.
-            Log.w("TAG", "onVerificationFailed", e)
-
-            if (e is FirebaseAuthInvalidCredentialsException) {
-                // Invalid request
-            } else if (e is FirebaseTooManyRequestsException) {
-                // The SMS quota for the project has been exceeded
-            }
-
-            // Show a message and update the UI
-        }
-
-        override fun onCodeSent(
-            verificationId: String,
-            token: PhoneAuthProvider.ForceResendingToken
-        ) {
-            // The SMS verification code has been sent to the provided phone number, we
-            // now need to ask the user to enter the code and then construct a credential
-            // by combining the code with a verification ID.
-            Log.d("TAG", "onCodeSent:$verificationId")
-
-            // Save verification ID and resending token so we can use them later
-            //storedVerificationId = verificationId
-            //resendToken = token
-        }
-    }
-
-    private fun aut(){
-        var auth = Firebase.auth
-
-        val options = PhoneAuthOptions.newBuilder(auth)
-            //.setPhoneNumber("+201016748500")       // Phone number to verify
-            .setTimeout(60L, TimeUnit.SECONDS) // Timeout and unit
-            .setActivity(this)                 // Activity (for callback binding)
-            .setCallbacks(callbacks)          // OnVerificationStateChangedCallbacks
-            //.build()
-        options.setPhoneNumber("")
-        PhoneAuthProvider.verifyPhoneNumber(options.build())
     }
 
     private fun updateUiOnEmailError(state: ErrorsState){
@@ -208,6 +97,11 @@ class ChatsActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         viewModel.removeListener()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.sync()
     }
 
     private fun toConversation(chatId: String){
@@ -241,14 +135,12 @@ fun ChatsScreen(modifier: Modifier = Modifier){
                 title ={ Text(text = stringResource(id = R.string.app_name)) }
             )
         },
-        floatingActionButton = { 
+        floatingActionButton = {
             FloatingActionButton(onClick = { if (!showDialog) viewModel.showDialog() }) {
                 Icon(painter = painterResource(id = R.drawable.ic_add), contentDescription = "Add chat" )
         }},
         floatingActionButtonPosition = FabPosition.End
-    ) {
-
-
+    ){
         if (showDialog){
             AddUserDialog()
         }else{
@@ -258,7 +150,6 @@ fun ChatsScreen(modifier: Modifier = Modifier){
                 }
             }
         }
-
     }
 }
 
@@ -277,12 +168,16 @@ fun AddUserDialog(){
             )
         ) {
             Column() {
-                Row() {
+                Row(modifier = Modifier.padding(16.dp)) {
                     IconButton(
                         onClick = { viewModel.hideDialog() },
                         modifier = Modifier.wrapContentSize()
                     ) {
-                        Icon(painter = painterResource(id = R.drawable.ic_back), contentDescription = "close", tint = MaterialTheme.colors.onSurface )
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_back),
+                            contentDescription = "close",
+                            tint = MaterialTheme.colors.onSurface
+                        )
                     }
                     Text(
                         text = stringResource(id = R.string.add_user_title),
@@ -362,25 +257,48 @@ fun ChatCard(chat: ChatRelations){
                     .clip(CircleShape),
                 contentScale = ContentScale.Crop
             )
-            Column{
-                Text(
-                    text = chat.user?.name ?: "Name",
-                    style = MaterialTheme.typography.h5,
-                    modifier = Modifier.padding(start = 8.dp, end = 16.dp),
-                    maxLines = 1
-                )
-                Row() {
+            val modifier: Modifier = Modifier
+            Column(modifier = modifier){
+                Row(modifier = modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(
+                        text = chat.user?.name ?: "Name",
+                        style = MaterialTheme.typography.body1,
+                        modifier = modifier.padding(start = 8.dp, end = 16.dp),
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
+                    )
+                    Text(
+                        text = when(val t =DateUtility.getChatDate(chat.chat.lastEditAt)){
+                            "n" -> stringResource(id = R.string.now_name)
+                            "y" -> stringResource(id = R.string.yesterday_name)
+                            else ->{
+                                if (t.isDigitsOnly()){
+                                    t+ " "+stringResource(id = R.string.min_ago)
+                                }else{
+                                    t
+                                }
+                            }
+                        },
+                        modifier = modifier.padding(end = 8.dp),
+                        color = Color.Gray,
+                        style = MaterialTheme.typography.caption
+                    )
+                }
+                Row(modifier = modifier.padding(top = 2.dp, start = 8.dp)) {
                     if (chat.chat.lastMessage == "IMAGE") {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_photo),
                             contentDescription ="photo label",
-                            modifier = Modifier.padding(start = 8.dp, top = 2.dp).size(16.dp)
+                            modifier = modifier.size(20.dp)
                         )
                     }
                     Text(
                         text = if (chat.chat.lastMessage == "IMAGE") stringResource(id = R.string.photo_name) else chat.chat.lastMessage,
-                        style = MaterialTheme.typography.caption,
-                        modifier = Modifier.padding(start = 8.dp, top = 2.dp).align(Alignment.CenterVertically),
+                        style = MaterialTheme.typography.body2,
+                        modifier = modifier
+                            .align(Alignment.CenterVertically)
+                            .padding(start = if (chat.chat.lastMessage == "IMAGE") 4.dp else 0.dp),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )

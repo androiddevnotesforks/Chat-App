@@ -13,8 +13,8 @@ android {
         applicationId "com.devwarex.chatapp"
         minSdk 26
         targetSdk 32
-        versionCode 4
-        versionName "1.0.4"
+        versionCode 6
+        versionName "1.0.6"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -71,6 +71,7 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.4.1'
     implementation "androidx.compose.runtime:runtime-livedata:$compose_version"
     implementation 'androidx.hilt:hilt-navigation-compose:1.0.0'
+
 
     //image
     implementation 'io.coil-kt:coil-compose:1.4.0'

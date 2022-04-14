@@ -37,4 +37,9 @@
     <string name="code_title">Code</string>
     <string name="verification_code">Verification code</string>
     <string name="photo_name">Photo</string>
+    <string name="wrong_phone_message">This phone is connected to another email</string>
+    <string name="wrong_code">Invalid verification code</string>
+    <string name="now_name">Just now</string>
+    <string name="yesterday_name">Yesterday</string>
+    <string name="min_ago">min ago</string>
 </resources>

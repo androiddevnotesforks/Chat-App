@@ -35,7 +35,6 @@ class ChatsRepo @Inject constructor(
     val error: Flow<ErrorsState> get() = addUserRepo.error.receiveAsFlow()
     val isAdded: Flow<Boolean> get() = addUserRepo.isAdded.receiveAsFlow()
     init {
-        sync(Firebase.auth.uid)
         job.launch {
             launch { database.getChats().collect { _uiState.value = _uiState.value.copy(isLoading = false, chats = it) } }
             launch { userByIdRepo.user.receiveAsFlow().collect { saveUser(it) } }
@@ -47,8 +46,8 @@ class ChatsRepo @Inject constructor(
     }
 
 
-    private fun sync(uid: String?){
-        if (uid == null) return
+    fun sync(){
+        val uid = Firebase.auth.uid ?: return
         chatListener = db.collection(Paths.CHATS)
             .whereArrayContains("ids",uid)
             .addSnapshotListener { value, error ->
