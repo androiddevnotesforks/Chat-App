@@ -1,12 +1,17 @@
 package com.devwarex.chatapp.ui.chat
 
 import android.content.Intent
+import android.database.Cursor
+import android.net.Uri
 import android.os.Bundle
+import android.provider.ContactsContract
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,8 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,11 +33,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.text.isDigitsOnly
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.lifecycleScope
-import coil.compose.rememberImagePainter
+import androidx.loader.app.LoaderManager
+import androidx.loader.content.CursorLoader
+import androidx.loader.content.Loader
+import coil.compose.rememberAsyncImagePainter
 import com.devwarex.chatapp.R
 import com.devwarex.chatapp.db.ChatRelations
 import com.devwarex.chatapp.ui.conversation.ConversationActivity
@@ -42,15 +48,30 @@ import com.devwarex.chatapp.ui.theme.ChatAppTheme
 import com.devwarex.chatapp.utility.BroadCastUtility
 import com.devwarex.chatapp.utility.DateUtility
 import com.google.android.gms.ads.*
+import com.google.firebase.FirebaseApp
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 
 @AndroidEntryPoint
-class ChatsActivity : ComponentActivity() {
+class ChatsActivity : ComponentActivity(), LoaderManager.LoaderCallbacks<Cursor> {
     private val viewModel:  ChatsViewModel by viewModels()
-    override fun onCreate(savedInstanceState: Bundle?) {
+    private val PROJECTION: Array<out String> = arrayOf(
+        ContactsContract.Contacts._ID,
+        ContactsContract.Contacts.LOOKUP_KEY,
+        ContactsContract.Contacts.DISPLAY_NAME,
+        ContactsContract.Contacts.HAS_PHONE_NUMBER
+    )
+    private val PHONE_PROJECTION: Array<out String> = arrayOf(
+        ContactsContract.CommonDataKinds.Phone._ID,
+        ContactsContract.CommonDataKinds.Phone.NUMBER,
+        ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME
+    )
+
+        override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         MobileAds.initialize(this)
 
@@ -59,9 +80,12 @@ class ChatsActivity : ComponentActivity() {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
-                ) { ChatsScreen() }
+                ) {
+                    ChatsScreen()
+                }
             }
         }
+        //LoaderManager.getInstance(this).initLoader(0,null,this)
         viewModel.chatId.observe(this,this::toConversation)
         lifecycleScope.launchWhenCreated {
             launch { viewModel.emailMessage.collect { updateUiOnEmailError(it) } }
@@ -75,6 +99,8 @@ class ChatsActivity : ComponentActivity() {
                 } }
             }
         }
+
+
     }
 
     private fun updateUiOnEmailError(state: ErrorsState){
@@ -112,17 +138,58 @@ class ChatsActivity : ComponentActivity() {
             }
         startActivity(conversationIntent)
     }
-}
 
-@Composable
-fun AdVMob(){
-    AndroidView(factory = {
-        AdView(it).apply {
-            adSize = AdSize.BANNER
-            adUnitId = "ca-app-pub-3940256099942544/6300978111"
-            loadAd(AdRequest.Builder().build())
+    override fun onCreateLoader(id: Int, args: Bundle?): Loader<Cursor> {
+        return CursorLoader(
+            this,
+            ContactsContract.Contacts.CONTENT_URI,
+            PROJECTION,
+            null,
+            null,
+            null
+        )
+    }
+
+    override fun onLoadFinished(loader: Loader<Cursor>, data: Cursor?) {
+        if (data == null) return
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                while (data.moveToNext()) {
+                    data.apply {
+                        if (getString(3) != "0") {
+                            val uti = Uri.withAppendedPath(
+                                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                                Uri.encode(getLong(0).toString())
+                            )
+                            val c = contentResolver.query(
+                                uti,
+                                PHONE_PROJECTION,
+                                null,
+                                null,
+                                null
+                            )
+                            if (c != null) {
+                                while (c.moveToNext()) {
+                                    c.moveToFirst()
+                                    Log.e(
+                                        "phone ${c.count}",
+                                        c.getLong(0).toString() +
+                                                " Name: " + c.getString(1) +
+                                                " -- " + c.getString(2)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+            }finally {
+            }
         }
-    })
+    }
+
+    override fun onLoaderReset(loader: Loader<Cursor>) {
+    }
 }
 
 @Composable
@@ -136,13 +203,43 @@ fun ChatsScreen(modifier: Modifier = Modifier){
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { if (!showDialog) viewModel.showDialog() }) {
+            IconButton(
+                onClick = { if (!showDialog) viewModel.showDialog() },
+                modifier = Modifier.background(color = MaterialTheme.colors.secondary, shape = MaterialTheme.shapes.small.copy(all = CornerSize(12.dp)))
+            ) {
                 Icon(painter = painterResource(id = R.drawable.ic_add), contentDescription = "Add chat" )
-        }},
-        floatingActionButtonPosition = FabPosition.End
+            }
+           /* FloatingActionButton(onClick = { if (!showDialog) viewModel.showDialog() }) {
+                Icon(painter = painterResource(id = R.drawable.ic_add), contentDescription = "Add chat" )
+        }*/},
+        floatingActionButtonPosition = FabPosition.End,
+        isFloatingActionButtonDocked = false
     ){
-        if (showDialog){
-            AddUserDialog()
+
+        if (chats.isEmpty()){
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "To begin a new Chat. Tap on \"+\" Button in the bottom corner.",
+                    style = MaterialTheme.typography.body1,
+                    modifier = modifier
+                        .wrapContentSize()
+                        .padding(all = 16.dp),
+                    color = MaterialTheme.colors.onSurface
+                )
+                Text(
+                    text = "You can start chatting with contacts who already have ChatApp installed on their phone.",
+                    style = MaterialTheme.typography.caption,
+                    modifier = modifier
+                        .wrapContentSize()
+                        .padding(all = 16.dp),
+                    color = MaterialTheme.colors.onSurface
+                )
+            }
+
         }else{
             LazyColumn(modifier = modifier){
                 items(chats){
@@ -152,6 +249,8 @@ fun ChatsScreen(modifier: Modifier = Modifier){
         }
     }
 }
+
+
 
 @Composable
 fun AddUserDialog(){
@@ -250,7 +349,7 @@ fun ChatCard(chat: ChatRelations){
     ) {
         Row(Modifier.padding(all = 16.dp)) {
             Image(
-                painter = if (chat.user?.img.isNullOrEmpty()) painterResource(id = R.drawable.user) else rememberImagePainter(data = chat.user?.img),
+                painter = if (chat.user?.img.isNullOrEmpty()) painterResource(id = R.drawable.user) else rememberAsyncImagePainter(model = chat.user?.img),
                 contentDescription = "User Image",
                 modifier = Modifier
                     .size(48.dp)

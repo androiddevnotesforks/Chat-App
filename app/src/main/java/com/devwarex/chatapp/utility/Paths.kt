@@ -12,6 +12,7 @@ class Paths {
 
         const val DATABASE_URL: String = "https://chat-app-50546-default-rtdb.europe-west1.firebasedatabase.app/"
         const val FCM_URL = "https://fcm.googleapis.com/"
+        const val REST_COUNTRIES_URL = "https://restcountries.com/"
 
     }
 }

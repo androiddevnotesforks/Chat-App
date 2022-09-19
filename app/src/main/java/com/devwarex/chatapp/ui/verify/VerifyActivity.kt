@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
+import androidx.compose.material.ExposedDropdownMenuDefaults.TrailingIcon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
@@ -22,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.lifecycleScope
 import com.devwarex.chatapp.R
@@ -35,9 +37,8 @@ import com.google.firebase.auth.PhoneAuthOptions
 import com.google.firebase.auth.PhoneAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
-import com.google.gson.Gson
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
@@ -105,7 +106,7 @@ class VerifyActivity : ComponentActivity() {
                 }
             }
         }
-
+        viewModel.getCountries()
         options = PhoneAuthOptions.newBuilder(Firebase.auth)
             .setTimeout(60L, TimeUnit.SECONDS) // Timeout and unit
             .setActivity(this)                 // Activity (for callback binding)
@@ -113,12 +114,9 @@ class VerifyActivity : ComponentActivity() {
 
         lifecycleScope.launchWhenCreated {
             launch {
-                viewModel.uistate.collect {
-                    if (it.requestingCode){
-                        viewModel.phoneNumber.observe(this@VerifyActivity){ phone ->
-                            verifying(phone)
-                            viewModel.phoneNumber.removeObservers(this@VerifyActivity)
-                        }
+                viewModel.uiState.collect {
+                    if (it.requestingCode && it.selectedCountry != null){
+                            verifying("${it.selectedCountry.idd.root}${it.selectedCountry.idd.suffixes[0]}${it.phone}")
                     }
 
                     if (it.verifying){
@@ -136,7 +134,7 @@ class VerifyActivity : ComponentActivity() {
     }
 
     private fun verifying(phone: String){
-        options.setPhoneNumber("+2$phone")
+        options.setPhoneNumber(phone)
         PhoneAuthProvider.verifyPhoneNumber(options.build())
     }
 
@@ -160,11 +158,29 @@ class VerifyActivity : ComponentActivity() {
                         viewModel.onPhoneIsWrong()
                         Toast.makeText(this, getString(R.string.wrong_phone_message),Toast.LENGTH_LONG).show()
                     }
+                    ALREADY_LINKED -> signIn()
                     else ->  Log.e("link","account: ${it.message}")
                 }
             }
     }
 
+    private fun signIn(){
+        Firebase.auth.signInWithCredential(mCredential)
+            .addOnCompleteListener(this) { task ->
+                if (task.isSuccessful) {
+                    // Sign in success, update UI with the signed-in user's information
+                    Log.d("sign_in", "signInWithCredential:success")
+                    viewModel.verifyAccount()
+                } else {
+                    // Sign in failed, display a message and update the UI
+                    Log.w("sign_in", "signInWithCredential:failure", task.exception)
+                    if (task.exception is FirebaseAuthInvalidCredentialsException) {
+                        // The verification code entered was invalid
+                    }
+                    // Update UI
+                }
+            }
+    }
 
     private fun verifyWithCredential(code: String){
         if (storedVerificationId.isNotEmpty() && code.isNotBlank()) {
@@ -184,15 +200,17 @@ class VerifyActivity : ComponentActivity() {
     companion object{
         const val WRONG_CODE_MESSAGE: String = "The sms verification code used to create the phone auth credential is invalid. Please resend the verification code sms and be sure use the verification code provided by the user."
         const val PHONE_LINKED_TO_ANOTHER_EMAIL_MESSAGE: String = "This credential is already associated with a different user account."
+        const val ALREADY_LINKED = "User has already been linked to the given provider."
     }
 
 }
 
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun VerifyScreen(modifier: Modifier = Modifier){
     val viewModel = hiltViewModel<VerifyViewModel>()
-    val (sent,requestingCode,verifying,success) = viewModel.uistate.collectAsState().value
+    val (sent,requestingCode,verifying,success,drop,selectedCountry,phone) = viewModel.uiState.collectAsState().value
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -225,10 +243,41 @@ fun VerifyScreen(modifier: Modifier = Modifier){
             textAlign = TextAlign.Center
         )
         Spacer(modifier = modifier.height(16.dp))
-        val phone = viewModel.phone.collectAsState()
+        ExposedDropdownMenuBox(
+            modifier = modifier.padding(end = 16.dp, top = 24.dp, bottom = 24.dp, start = 48.dp),
+            expanded = false,
+            onExpandedChange = { viewModel.dropDown() }
+        ) {
+            TextField(
+                readOnly = true,
+                enabled = !sent && !verifying && !success,
+                value = if (selectedCountry == null) stringResource(id = R.string.select_country_message) else "${selectedCountry.flag} ${selectedCountry.name.common}",
+                onValueChange = { },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(text = "Country") },
+                trailingIcon = {
+                    TrailingIcon(
+                        expanded = drop
+                    ) },
+                colors = TextFieldDefaults.textFieldColors(
+                    textColor = MaterialTheme.colors.onSurface,
+                    backgroundColor = MaterialTheme.colors.background
+                )
+            )
+            val countries = viewModel.countries.collectAsState().value
+            ExposedDropdownMenu(expanded = drop, onDismissRequest = { viewModel.dropDown() }) {
+                countries.forEach { country ->
+                    DropdownMenuItem(onClick = {
+                        viewModel.onCountrySelect(country)
+                    }) {
+                        Text(text = country.flag + "  " + country.name.common)
+                    }
+                }
+            }
+        }
         Row() {
             Text(
-                text = "EG +2",
+                text = if (selectedCountry == null) "ـــ" else "${selectedCountry.cca2} ${selectedCountry.idd.root}${selectedCountry.idd.suffixes[0]}",
                 modifier = modifier
                     .padding(start = 16.dp)
                     .align(Alignment.CenterVertically),
@@ -236,7 +285,7 @@ fun VerifyScreen(modifier: Modifier = Modifier){
                 color = Color.Gray
                 )
             OutlinedTextField(
-                value = phone.value,
+                value = phone,
                 onValueChange = viewModel::setPhone,
                 singleLine = true,
                 enabled = !sent && !verifying && !success,
@@ -255,7 +304,7 @@ fun VerifyScreen(modifier: Modifier = Modifier){
         Spacer(modifier = modifier.height(16.dp))
         if (!requestingCode && !sent && !verifying && !success) {
             Button(onClick = { viewModel.onRequestCode() }, modifier = modifier.align(Alignment.CenterHorizontally)) {
-                Text(text = "Get verification code")
+                Text(text = stringResource(id = R.string.get_verify_title))
             }
         }
         if (requestingCode){
@@ -266,30 +315,38 @@ fun VerifyScreen(modifier: Modifier = Modifier){
             )
         }
         if (sent){
-            val code = viewModel.code.collectAsState()
-            OutlinedTextField(
-                value = code.value,
-                onValueChange = viewModel::setCode,
-                singleLine = true,
-                enabled = !verifying,
-                colors = TextFieldDefaults.textFieldColors(
-                    textColor = MaterialTheme.colors.onSurface,
-                    backgroundColor = MaterialTheme.colors.background
-                ),
-                modifier = modifier
-                    .padding(end = 16.dp, start = 16.dp)
-                    .align(Alignment.CenterHorizontally),
-                label = { Text(text = stringResource(id = R.string.verification_code)) },
-                placeholder = { Text(text = stringResource(id = R.string.code_title)) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-            )
-            Spacer(modifier = modifier.height(16.dp))
-            Button(
-                onClick = { viewModel.onVerify() },
-                colors =ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.secondary) ,
-                modifier = modifier.align(Alignment.CenterHorizontally)) {
-                Text(text = "Verify")
-            }
+            AlertDialog(onDismissRequest = {  },
+                properties = DialogProperties(dismissOnBackPress = false,dismissOnClickOutside = false),
+                title = {
+                    Text(text = stringResource(id = R.string.type_code_title))
+                }, buttons = {
+                    val code = viewModel.code.collectAsState()
+                    OutlinedTextField(
+                        value = code.value,
+                        onValueChange = viewModel::setCode,
+                        singleLine = true,
+                        enabled = !verifying,
+                        colors = TextFieldDefaults.textFieldColors(
+                            textColor = MaterialTheme.colors.onSurface,
+                            backgroundColor = MaterialTheme.colors.background
+                        ),
+                        modifier = modifier
+                            .padding(all = 16.dp)
+                            .align(Alignment.CenterHorizontally),
+                        label = { Text(text = stringResource(id = R.string.verification_code)) },
+                        placeholder = { Text(text = stringResource(id = R.string.code_title)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+                    Spacer(modifier = modifier.height(16.dp))
+                    Button(
+                        onClick = { viewModel.onVerify() },
+                        colors =ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.secondary) ,
+                        modifier = modifier
+                            .align(Alignment.CenterHorizontally)
+                            .padding(bottom = 16.dp)) {
+                        Text(text = stringResource(id = R.string.verify_title))
+                    }
+                })
         }
         if (verifying){
             LinearProgressIndicator(modifier = modifier

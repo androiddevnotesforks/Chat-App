@@ -5,34 +5,52 @@ import androidx.core.text.isDigitsOnly
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.devwarex.chatapp.repos.UserByIdRepo
+import androidx.lifecycle.viewModelScope
+import com.devwarex.chatapp.models.CountryModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class VerifyViewModel @Inject constructor(
-    private val repo: UserByIdRepo
+    private val repo: VerifyRepo
 ): ViewModel() {
 
-    private val _phone = MutableStateFlow("")
     private val _code = MutableStateFlow("")
     private val _uiState = MutableStateFlow(VerifyUiState())
-    val uistate: StateFlow<VerifyUiState> get() = _uiState
-    val phone: StateFlow<String> get() = _phone
+    val uiState: StateFlow<VerifyUiState> get() = _uiState
     val code: StateFlow<String> get() = _code
-    val isVerified: Flow<Boolean> get() = repo.isVerified.receiveAsFlow()
-    private val _phoneNumber = MutableLiveData<String>()
+    val isVerified: Flow<Boolean> get() = repo.isVerified
     private val _codeNumber = MutableLiveData<String>()
-    val phoneNumber: LiveData<String> get() = _phoneNumber
     val codeNumber: LiveData<String> get() = _codeNumber
+    val countries: StateFlow<List<CountryModel>> get() = repo.countries
 
+    fun getCountries() = repo.getCountries()
+
+    fun dropDown(){
+        viewModelScope.launch {
+            _uiState.emit(_uiState.value.copy(drop = !_uiState.value.drop))
+        }
+    }
     fun setPhone(s: String){
-        if (s.isNotBlank() && s.isDigitsOnly()){
-            _phone.value = s
+        if (s.isNotBlank()){
+            if (s[0] == '0'){
+                return
+            }
+        }
+        if (s.isDigitsOnly()){
+            viewModelScope.launch {
+                _uiState.emit(_uiState.value.copy(phone = s))
+            }
         }
     }
 
+    fun onCountrySelect(country: CountryModel){
+        viewModelScope.launch {
+            _uiState.emit(_uiState.value.copy(drop = false, selectedCountry = country))
+        }
+    }
 
     fun setCode(s: String){
         if (s.length in 0..6){
@@ -45,8 +63,7 @@ class VerifyViewModel @Inject constructor(
     }
 
     fun onRequestCode(){
-        if (_phone.value.length == 11) {
-            _phoneNumber.value = _phone.value
+        if (_uiState.value.phone.length > 7) {
             _uiState.value = _uiState.value.copy(requestingCode = true)
         }
     }
@@ -64,7 +81,10 @@ class VerifyViewModel @Inject constructor(
     }
 
     fun verifyAccount(){
-        repo.verifyAccount()
+        val c = _uiState.value.selectedCountry
+        val p = _uiState.value.phone
+        if (c != null)
+        repo.verifyAccount("${c.idd.root}${c.idd.suffixes[0]}$p")
     }
 
     fun onPhoneIsWrong(){
@@ -77,6 +97,11 @@ class VerifyViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(sent = true, requestingCode = false, verifying = false, success = false)
         _code.value = ""
         _codeNumber.value = ""
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        repo.cancelJob()
     }
 
 }

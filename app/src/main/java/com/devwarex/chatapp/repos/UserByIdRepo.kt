@@ -55,12 +55,13 @@ class UserByIdRepo @Inject constructor() {
             } }
     }
 
-    fun verifyAccount(){
+    fun verifyAccount(phone: String){
         val user = Firebase.auth.currentUser
         if (user !=  null){
             db.collection(Paths.USERS)
                 .document(user.uid)
-                .update("verified",true)
+                .update("verified",true,
+                "phone",phone)
                 .addOnCompleteListener { CoroutineScope(Dispatchers.Default).launch { isVerified.send(it.isSuccessful) } }
         }
     }

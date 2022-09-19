@@ -10,6 +10,7 @@ class UserModel(){
     var uid: String = ""
     var deviceToken: String = ""
     var img: String = ""
+    var phone: String = ""
     var verified: Boolean = false
     @ServerTimestamp
     val timestamp: Date? = null

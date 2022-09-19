@@ -41,6 +41,7 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.lifecycleScope
+import coil.compose.rememberAsyncImagePainter
 import coil.compose.rememberImagePainter
 import com.devwarex.chatapp.R
 import com.devwarex.chatapp.db.Message
@@ -203,7 +204,7 @@ fun MainLayoutScreen(modifier: Modifier = Modifier){
                     .align(Alignment.CenterStart)
                     .padding(start = 16.dp)) {
                     Image(
-                        painter = if (user?.img.isNullOrEmpty()) painterResource(id = R.drawable.user) else rememberImagePainter(data = user?.img),
+                        painter = if (user?.img.isNullOrEmpty()) painterResource(id = R.drawable.user) else rememberAsyncImagePainter(model = user?.img),
                         contentDescription = "User Image",
                         modifier = Modifier
                             .size(40.dp)
@@ -349,7 +350,7 @@ fun ReceiveMessageCard(msg: Message,modifier: Modifier,viewModel: MessagesViewMo
 
                 MessageType.IMAGE -> {
                     Image(
-                        painter = rememberImagePainter(data = msg.body),
+                        painter = rememberAsyncImagePainter(model = msg.body),
                         contentDescription = "photo message",
                         modifier = Modifier
                             .wrapContentSize()
@@ -423,7 +424,7 @@ fun SenderMessageCard(
 
                 MessageType.IMAGE -> {
                     Image(
-                        painter = rememberImagePainter(data = msg.body),
+                        painter = rememberAsyncImagePainter(model = msg.body),
                         contentDescription = "photo message",
                         modifier = Modifier
                             .wrapContentSize()
@@ -551,7 +552,7 @@ fun PreviewImage(
     )) {
         val (closeButton,image) = createRefs()
         Image(
-            painter = rememberImagePainter(data = img),
+            painter = rememberAsyncImagePainter(model = img),
             contentDescription = "Preview image",
             modifier = modifier
                 .fillMaxSize()

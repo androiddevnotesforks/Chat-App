@@ -42,4 +42,9 @@
     <string name="now_name">Just now</string>
     <string name="yesterday_name">Yesterday</string>
     <string name="min_ago">min ago</string>
+    <string name="select_country_message">Select Country</string>
+    <string name="country_title">Country</string>
+    <string name="get_verify_title">Get verification code</string>
+    <string name="verify_title">Verify</string>
+    <string name="type_code_title">Type verification code:</string>
 </resources>

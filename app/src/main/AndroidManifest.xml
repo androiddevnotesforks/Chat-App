@@ -3,6 +3,7 @@
     package="com.devwarex.chatapp">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
 
@@ -59,7 +60,9 @@
             />
         <activity android:name=".ui.verify.VerifyActivity"
             android:exported="true"
-            android:theme="@style/Theme.ChatApp"/>
+            android:theme="@style/Theme.ChatApp">
+
+        </activity>
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@drawable/ic_message" />

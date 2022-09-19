@@ -29,6 +29,7 @@ import com.devwarex.chatapp.ui.signUp.*
 import com.devwarex.chatapp.ui.theme.ChatAppTheme
 import com.devwarex.chatapp.ui.theme.DarkBackground
 import com.devwarex.chatapp.ui.theme.LightBlue
+import com.devwarex.chatapp.ui.verify.VerifyActivity
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -47,7 +48,7 @@ class SignInActivity : ComponentActivity() {
             val viewModel: SignInViewModel by viewModels()
             viewModel.isSucceed.observe(this){
                 if (it){
-                    val homeIntent = Intent(this, MainActivity::class.java)
+                    val homeIntent = Intent(this, VerifyActivity::class.java)
                     startActivity(homeIntent)
                     finish()
                 }
