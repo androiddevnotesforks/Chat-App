@@ -2,6 +2,7 @@
     <string name="app_name">Chat App</string>
     <string name="title_activity_sign_up">SignUpActivity</string>
     <string name="sign_up_title">Sign up</string>
+    <string name="contacts_title">Contacts</string>
     <string name="name_title">Name</string>
     <string name="email_title">Email</string>
     <string name="password_title">Password</string>
@@ -47,4 +48,6 @@
     <string name="get_verify_title">Get verification code</string>
     <string name="verify_title">Verify</string>
     <string name="type_code_title">Type verification code:</string>
+    <string name="request_contact_permission_message">To easily connect with friends, Please allow ChatApp access to your contacts.</string>
+    <string name="allow_access_title">Allow access</string>
 </resources>

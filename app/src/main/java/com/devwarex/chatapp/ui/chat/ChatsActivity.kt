@@ -42,36 +42,27 @@ import androidx.loader.content.Loader
 import coil.compose.rememberAsyncImagePainter
 import com.devwarex.chatapp.R
 import com.devwarex.chatapp.db.ChatRelations
+import com.devwarex.chatapp.ui.contacts.ContactsActivity
 import com.devwarex.chatapp.ui.conversation.ConversationActivity
-import com.devwarex.chatapp.ui.signUp.ErrorsState
 import com.devwarex.chatapp.ui.theme.ChatAppTheme
 import com.devwarex.chatapp.utility.BroadCastUtility
 import com.devwarex.chatapp.utility.DateUtility
 import com.google.android.gms.ads.*
-import com.google.firebase.FirebaseApp
-import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 
 @AndroidEntryPoint
-class ChatsActivity : ComponentActivity(), LoaderManager.LoaderCallbacks<Cursor> {
-    private val viewModel:  ChatsViewModel by viewModels()
-    private val PROJECTION: Array<out String> = arrayOf(
-        ContactsContract.Contacts._ID,
-        ContactsContract.Contacts.LOOKUP_KEY,
-        ContactsContract.Contacts.DISPLAY_NAME,
-        ContactsContract.Contacts.HAS_PHONE_NUMBER
-    )
-    private val PHONE_PROJECTION: Array<out String> = arrayOf(
-        ContactsContract.CommonDataKinds.Phone._ID,
-        ContactsContract.CommonDataKinds.Phone.NUMBER,
-        ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME
-    )
+class ChatsActivity : ComponentActivity(){
 
-        override fun onCreate(savedInstanceState: Bundle?) {
+    private val viewModel:  ChatsViewModel by viewModels()
+
+
+
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         MobileAds.initialize(this)
 
@@ -85,35 +76,23 @@ class ChatsActivity : ComponentActivity(), LoaderManager.LoaderCallbacks<Cursor>
                 }
             }
         }
-        //LoaderManager.getInstance(this).initLoader(0,null,this)
+        //
         viewModel.chatId.observe(this,this::toConversation)
         lifecycleScope.launchWhenCreated {
-            launch { viewModel.emailMessage.collect { updateUiOnEmailError(it) } }
-            launch {
-                viewModel.isAdded.collect { if (it){
-                    Toast.makeText(this@ChatsActivity, "User added",Toast.LENGTH_LONG).show()
-                    viewModel.hideDialog()
-                } else {
-                    Toast.makeText(this@ChatsActivity, "User already exist",Toast.LENGTH_LONG).show()
-                    viewModel.hideDialog()
-                } }
+            viewModel.addUser.collectLatest {
+                if (it){
+                    viewModel.removeToContactsObserver()
+                    toContacts()
+                }
             }
         }
 
 
     }
 
-    private fun updateUiOnEmailError(state: ErrorsState){
-        when(state){
-            ErrorsState.INVALID_EMAIL -> {
-                Toast.makeText(this,getString(R.string.invalid_email_message),Toast.LENGTH_LONG).show()
-            }
-            ErrorsState.EMAIL_NOT_FOUND -> {
-                Toast.makeText(this,getString(R.string.email_not_found_message),Toast.LENGTH_LONG).show()
-            }
-            ErrorsState.NONE -> { }
-            else -> viewModel.hideDialog()
-        }
+    private fun toContacts(){
+        val intent = Intent(this,ContactsActivity::class.java)
+        startActivity(intent)
     }
 
     override fun onPause() {
@@ -139,63 +118,13 @@ class ChatsActivity : ComponentActivity(), LoaderManager.LoaderCallbacks<Cursor>
         startActivity(conversationIntent)
     }
 
-    override fun onCreateLoader(id: Int, args: Bundle?): Loader<Cursor> {
-        return CursorLoader(
-            this,
-            ContactsContract.Contacts.CONTENT_URI,
-            PROJECTION,
-            null,
-            null,
-            null
-        )
-    }
 
-    override fun onLoadFinished(loader: Loader<Cursor>, data: Cursor?) {
-        if (data == null) return
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                while (data.moveToNext()) {
-                    data.apply {
-                        if (getString(3) != "0") {
-                            val uti = Uri.withAppendedPath(
-                                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                                Uri.encode(getLong(0).toString())
-                            )
-                            val c = contentResolver.query(
-                                uti,
-                                PHONE_PROJECTION,
-                                null,
-                                null,
-                                null
-                            )
-                            if (c != null) {
-                                while (c.moveToNext()) {
-                                    c.moveToFirst()
-                                    Log.e(
-                                        "phone ${c.count}",
-                                        c.getLong(0).toString() +
-                                                " Name: " + c.getString(1) +
-                                                " -- " + c.getString(2)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-            }finally {
-            }
-        }
-    }
-
-    override fun onLoaderReset(loader: Loader<Cursor>) {
-    }
 }
 
 @Composable
 fun ChatsScreen(modifier: Modifier = Modifier){
     val viewModel: ChatsViewModel = hiltViewModel()
-    val (chats,isLoading,showDialog) = viewModel.uiState.collectAsState().value
+    val (chats,isLoading) = viewModel.uiState.collectAsState().value
     Scaffold(
         topBar = {
             TopAppBar(
@@ -204,14 +133,12 @@ fun ChatsScreen(modifier: Modifier = Modifier){
         },
         floatingActionButton = {
             IconButton(
-                onClick = { if (!showDialog) viewModel.showDialog() },
+                onClick = { viewModel.toContacts() },
                 modifier = Modifier.background(color = MaterialTheme.colors.secondary, shape = MaterialTheme.shapes.small.copy(all = CornerSize(12.dp)))
             ) {
                 Icon(painter = painterResource(id = R.drawable.ic_add), contentDescription = "Add chat" )
             }
-           /* FloatingActionButton(onClick = { if (!showDialog) viewModel.showDialog() }) {
-                Icon(painter = painterResource(id = R.drawable.ic_add), contentDescription = "Add chat" )
-        }*/},
+         },
         floatingActionButtonPosition = FabPosition.End,
         isFloatingActionButtonDocked = false
     ){
@@ -255,7 +182,6 @@ fun ChatsScreen(modifier: Modifier = Modifier){
 @Composable
 fun AddUserDialog(){
     val viewModel = hiltViewModel<ChatsViewModel>()
-    val email = viewModel.email.collectAsState().value
     CustomDialogScreen() {
         Card(
             elevation = 12.dp,
@@ -269,7 +195,7 @@ fun AddUserDialog(){
             Column() {
                 Row(modifier = Modifier.padding(16.dp)) {
                     IconButton(
-                        onClick = { viewModel.hideDialog() },
+                        onClick = {  },
                         modifier = Modifier.wrapContentSize()
                     ) {
                         Icon(
@@ -288,8 +214,8 @@ fun AddUserDialog(){
                     )
                 }
                 OutlinedTextField(
-                    value = email,
-                    onValueChange = { viewModel.setEmail(it) },
+                    value = "",
+                    onValueChange = { },
                     modifier = Modifier
                         .padding(all = 24.dp)
                         .align(Alignment.CenterHorizontally),
@@ -298,7 +224,7 @@ fun AddUserDialog(){
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                     singleLine = true
                 )
-                Button(onClick = { viewModel.addUser()},
+                Button(onClick = { },
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
                     .padding(bottom = 24.dp)

@@ -18,6 +18,8 @@ interface AppDao {
     @Query("select * from chat_table order by lastEditAt desc")
     fun getChats(): Flow<List<ChatRelations>>
 
+    @Query("select * from contacts_table order by name asc")
+    fun getContacts(): Flow<List<Contact>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertMessage(message: Message): Completable
@@ -27,4 +29,7 @@ interface AppDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertChat(chat: Chat): Completable
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertContact(contact: Contact)
 }
