@@ -8,6 +8,7 @@ data class User(
     @PrimaryKey val uid: String,
     val name: String,
     val img: String,
+    val phone: String,
     val email: String,
     val joinedAt: Long
 )

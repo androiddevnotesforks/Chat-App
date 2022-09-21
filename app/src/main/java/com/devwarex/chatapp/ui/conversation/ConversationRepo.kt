@@ -57,15 +57,15 @@ class ConversationRepo @Inject constructor(
             } }
         }
         chatJob.launch { database.getChatByChatId(chatId).collect {
-            if (it == null){
+            if (it?.user == null){
                 launch {
                     shouldFetchChat.send(true)
                     job.cancel()
                 }
             }else {
                 _uiState.value = _uiState.value.copy(chat = it.chat, receiverUser = it.user)
-                userRepo.getTokenByUserId(it.user?.uid ?: "")
-                initDataBase(it.user?.uid ?: "")
+                userRepo.getTokenByUserId(it.user.uid)
+                initDataBase(it.user.uid)
                 chatJob.cancel()
             }
         } }

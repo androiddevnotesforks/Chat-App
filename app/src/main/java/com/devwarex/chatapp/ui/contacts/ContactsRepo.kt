@@ -3,8 +3,10 @@ package com.devwarex.chatapp.ui.contacts
 import android.util.Log
 import com.devwarex.chatapp.db.AppDao
 import com.devwarex.chatapp.db.Contact
+import com.devwarex.chatapp.db.User
 import com.devwarex.chatapp.repos.CreateChatRepo
 import com.devwarex.chatapp.repos.SearchUserRepo
+import com.devwarex.chatapp.util.DateUtility
 import com.devwarex.chatapp.util.PhoneUtil
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.*
@@ -30,7 +32,19 @@ class ContactsRepo @Inject constructor(
     init {
         job.launch {
             launch {
-                searchRepo.user.receiveAsFlow().collectLatest { if (it != null) chatRepo.create(it)}
+                searchRepo.user.receiveAsFlow().collectLatest { if (it != null){
+                    chatRepo.create(it)
+                    db.insertUser(
+                        User(
+                            uid = it.uid,
+                            name = it.name,
+                            img = it.img,
+                            email = it.email,
+                            phone = it.phone,
+                            joinedAt = it.timestamp?.time ?: 0L
+                        )
+                    )
+                }}
             }
             launch {
                 searchRepo.isContactFound.receiveAsFlow().collectLatest {

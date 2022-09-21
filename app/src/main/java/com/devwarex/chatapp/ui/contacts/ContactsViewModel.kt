@@ -1,6 +1,5 @@
 package com.devwarex.chatapp.ui.contacts
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.devwarex.chatapp.datastore.DatastoreImpl
@@ -30,6 +29,7 @@ class ContactsViewModel @Inject constructor(
     val shouldRetrieveContacts: StateFlow<Boolean> get() = _shouldRetrieveContacts
     val shouldInviteContact: StateFlow<String> get() = _shouldInviteContact
     val chatId: Flow<String?> get() = repo.chatId
+    private var isSearching = false
 
     init {
         viewModelScope.launch {
@@ -44,8 +44,11 @@ class ContactsViewModel @Inject constructor(
                                     savedTime = time
                                 )
                             ){
-                                repo.searchContacts(it)
-                                datastore.updateContactsTimeout(Calendar.getInstance().timeInMillis)
+                                if (!isSearching) {
+                                    repo.searchContacts(it)
+                                    isSearching = true
+                                    datastore.updateContactsTimeout(Calendar.getInstance().timeInMillis)
+                                }
                             }
                         }
                     }

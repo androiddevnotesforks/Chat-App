@@ -52,4 +52,5 @@
     <string name="allow_access_title">Allow access</string>
     <string name="invite_title">Invite</string>
     <string name="start_chat_title">Tap to start chat</string>
+    <string name="share_app_body">Let\'s chat on ChatApp! \nGet it:\nhttps://play.google.com/store/apps/details?id=com.devwarex.chatapp</string>
 </resources>

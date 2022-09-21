@@ -129,7 +129,7 @@ class ContactsActivity : ComponentActivity(),LoaderManager.LoaderCallbacks<Curso
         if (phone.isBlank()) return
         val i = Intent(Intent.ACTION_SENDTO).apply {
             data = Uri.parse("sms:$phone")
-            putExtra("sms_body","Hi ya")
+            putExtra("sms_body", getString(resource.string.share_app_body))
         }
         try {
             startActivity(i)

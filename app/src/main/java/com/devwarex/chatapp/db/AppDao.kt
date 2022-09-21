@@ -27,7 +27,7 @@ interface AppDao {
     fun insertMessage(message: Message): Completable
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertUser(user: User): Completable
+    suspend fun insertUser(user: User)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertChat(chat: Chat): Completable

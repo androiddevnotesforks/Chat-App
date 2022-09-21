@@ -88,16 +88,19 @@ class ChatsRepo @Inject constructor(
     }
 
     private fun saveUser(user: UserModel){
-        database.insertUser(
-            User(
-                uid = user.uid,
-                name = user.name,
-                img = user.img,
-                email = user.email,
-                joinedAt = user.timestamp?.time ?: 0L
+        job.launch {
+            database.insertUser(
+                User(
+                    uid = user.uid,
+                    name = user.name,
+                    img = user.img,
+                    email = user.email,
+                    phone = user.phone,
+                    joinedAt = user.timestamp?.time ?: 0L
+                )
             )
-        ).subscribeOn(Schedulers.computation())
-            .subscribe({Log.e("save_user","saved")},{Log.e("save_user","error: ${it.message}")})
+        }
+
     }
 
     fun removeListener(){
