@@ -3,7 +3,7 @@ package com.devwarex.chatapp
 import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.IntentFilter
-import com.devwarex.chatapp.utility.BroadCastUtility
+import com.devwarex.chatapp.util.BroadCastUtility
 import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp

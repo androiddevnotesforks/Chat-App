@@ -7,13 +7,11 @@ import com.devwarex.chatapp.db.User
 import com.devwarex.chatapp.models.ChatModel
 import com.devwarex.chatapp.models.UserModel
 import com.devwarex.chatapp.repos.UserByIdRepo
-import com.devwarex.chatapp.ui.signUp.ErrorsState
-import com.devwarex.chatapp.utility.Paths
+import com.devwarex.chatapp.util.Paths
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
-import com.google.gson.Gson
 import io.reactivex.rxjava3.schedulers.Schedulers
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -23,26 +21,20 @@ import javax.inject.Inject
 
 class ChatsRepo @Inject constructor(
     private val database: AppDao,
-    private val userByIdRepo: UserByIdRepo,
-    private val addUserRepo: AddUserRepo
-) {
+    private val userByIdRepo: UserByIdRepo
+    ) {
 
     private val db = Firebase.firestore
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> get() = _uiState
     private val job = CoroutineScope(Dispatchers.Unconfined)
     private var chatListener: ListenerRegistration? = null
-    val error: Flow<ErrorsState> get() = addUserRepo.error.receiveAsFlow()
-    val isAdded: Flow<Boolean> get() = addUserRepo.isAdded.receiveAsFlow()
+
     init {
         job.launch {
             launch { database.getChats().collect { _uiState.value = _uiState.value.copy(isLoading = false, chats = it) } }
             launch { userByIdRepo.user.receiveAsFlow().collect { saveUser(it) } }
         }
-    }
-
-    fun addUser(email: String){
-        addUserRepo.addUser(email = email)
     }
 
 
@@ -89,7 +81,7 @@ class ChatsRepo @Inject constructor(
                             receiverUid = it
                         )
                     ).subscribeOn(Schedulers.computation())
-                        .subscribe({userByIdRepo.getUser(it)},{ Log.e("save_chat","error: ${it.message}")})
+                        .subscribe({userByIdRepo.getUserById(it)},{ Log.e("save_chat","error: ${it.message}")})
                 }
             }
         }
@@ -112,18 +104,5 @@ class ChatsRepo @Inject constructor(
         if (chatListener != null) {
             chatListener?.remove()
         }
-    }
-
-
-    fun clearEmail(email: String): String {
-        var newEmail = ""
-        if (email.isNotBlank()) {
-            email.forEach { c ->
-                if (!c.isWhitespace()) {
-                    newEmail += c
-                }
-            }
-        }
-        return newEmail
     }
 }

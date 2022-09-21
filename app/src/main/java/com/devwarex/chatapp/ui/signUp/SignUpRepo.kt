@@ -1,12 +1,10 @@
 package com.devwarex.chatapp.ui.signUp
 
 import android.util.Log
-import androidx.compose.runtime.MutableState
 import androidx.lifecycle.MutableLiveData
 import com.devwarex.chatapp.models.UserModel
 import com.devwarex.chatapp.repos.UpdateTokenRepo
-import com.devwarex.chatapp.utility.Paths
-import com.google.firebase.auth.FirebaseUser
+import com.devwarex.chatapp.util.Paths
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase

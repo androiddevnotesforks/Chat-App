@@ -1,17 +1,15 @@
 package com.devwarex.chatapp.repos
 
 import com.devwarex.chatapp.db.AppDao
-import com.devwarex.chatapp.db.AppRoomDatabase
 import com.devwarex.chatapp.models.MessageModel
 import com.devwarex.chatapp.models.MessageNotificationModel
 import com.devwarex.chatapp.models.MessageNotifyDataModel
-import com.devwarex.chatapp.utility.MessageState
-import com.devwarex.chatapp.utility.MessageType
-import com.devwarex.chatapp.utility.Paths
+import com.devwarex.chatapp.util.MessageState
+import com.devwarex.chatapp.util.MessageType
+import com.devwarex.chatapp.util.Paths
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
-import io.reactivex.rxjava3.schedulers.Schedulers
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel

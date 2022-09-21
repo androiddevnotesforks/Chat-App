@@ -1,12 +1,7 @@
 package com.devwarex.chatapp.ui.chat
 
 import android.content.Intent
-import android.database.Cursor
-import android.net.Uri
 import android.os.Bundle
-import android.provider.ContactsContract
-import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -17,7 +12,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,32 +19,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.text.isDigitsOnly
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.lifecycleScope
-import androidx.loader.app.LoaderManager
-import androidx.loader.content.CursorLoader
-import androidx.loader.content.Loader
 import coil.compose.rememberAsyncImagePainter
 import com.devwarex.chatapp.R
 import com.devwarex.chatapp.db.ChatRelations
 import com.devwarex.chatapp.ui.contacts.ContactsActivity
 import com.devwarex.chatapp.ui.conversation.ConversationActivity
 import com.devwarex.chatapp.ui.theme.ChatAppTheme
-import com.devwarex.chatapp.utility.BroadCastUtility
-import com.devwarex.chatapp.utility.DateUtility
-import com.google.android.gms.ads.*
+import com.devwarex.chatapp.util.BroadCastUtility
+import com.devwarex.chatapp.util.DateUtility
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -64,8 +49,6 @@ class ChatsActivity : ComponentActivity(){
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        MobileAds.initialize(this)
-
         setContent {
             ChatAppTheme {
                 Surface(
@@ -76,23 +59,17 @@ class ChatsActivity : ComponentActivity(){
                 }
             }
         }
-        //
+        viewModel.sync()
         viewModel.chatId.observe(this,this::toConversation)
-        lifecycleScope.launchWhenCreated {
-            viewModel.addUser.collectLatest {
-                if (it){
-                    viewModel.removeToContactsObserver()
-                    toContacts()
-                }
-            }
+        lifecycleScope.launchWhenStarted {
+            launch { viewModel.toContacts.collectLatest { if (it){ toContacts()} } }
         }
-
-
     }
 
     private fun toContacts(){
         val intent = Intent(this,ContactsActivity::class.java)
         startActivity(intent)
+        viewModel.removeToContactsObserver()
     }
 
     override fun onPause() {
@@ -102,11 +79,6 @@ class ChatsActivity : ComponentActivity(){
     override fun onDestroy() {
         super.onDestroy()
         viewModel.removeListener()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        viewModel.sync()
     }
 
     private fun toConversation(chatId: String){
@@ -172,88 +144,6 @@ fun ChatsScreen(modifier: Modifier = Modifier){
                 items(chats){
                     ChatCard(chat = it)
                 }
-            }
-        }
-    }
-}
-
-
-
-@Composable
-fun AddUserDialog(){
-    val viewModel = hiltViewModel<ChatsViewModel>()
-    CustomDialogScreen() {
-        Card(
-            elevation = 12.dp,
-            modifier = Modifier
-                .wrapContentSize()
-                .padding(start = 16.dp, end = 16.dp),
-            shape = MaterialTheme.shapes.large.copy(
-                all = CornerSize(12.dp)
-            )
-        ) {
-            Column() {
-                Row(modifier = Modifier.padding(16.dp)) {
-                    IconButton(
-                        onClick = {  },
-                        modifier = Modifier.wrapContentSize()
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_back),
-                            contentDescription = "close",
-                            tint = MaterialTheme.colors.onSurface
-                        )
-                    }
-                    Text(
-                        text = stringResource(id = R.string.add_user_title),
-                        style = MaterialTheme.typography.h6,
-                        modifier = Modifier
-                            .align(Alignment.CenterVertically)
-                            .padding(start = 32.dp),
-                        textAlign = TextAlign.Center
-                    )
-                }
-                OutlinedTextField(
-                    value = "",
-                    onValueChange = { },
-                    modifier = Modifier
-                        .padding(all = 24.dp)
-                        .align(Alignment.CenterHorizontally),
-                    label = { Text(text = stringResource(id = R.string.email_title)) },
-                    placeholder = { Text(text = stringResource(id = R.string.enter_email_title))},
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                    singleLine = true
-                )
-                Button(onClick = { },
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(bottom = 24.dp)
-                    .fillMaxWidth()
-                    .padding(start = 48.dp, end = 48.dp)) {
-                    Text(text = stringResource(id = R.string.add_title))
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun CustomDialogScreen(
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
-){
-    Layout(
-        modifier = modifier.fillMaxSize(),
-        content = content
-    ){ measurables, constraints ->
-
-        val placeables = measurables.map { measurable ->
-            measurable.measure(constraints)
-        }
-
-        layout(constraints.maxWidth, constraints.maxHeight){
-            placeables.forEach { placeable ->
-                placeable.placeRelative(x = constraints.maxWidth/constraints.maxHeight, y = constraints.maxHeight/constraints.maxWidth)
             }
         }
     }

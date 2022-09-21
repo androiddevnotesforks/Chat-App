@@ -4,8 +4,8 @@ import androidx.annotation.NonNull
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.devwarex.chatapp.utility.MessageState
-import com.devwarex.chatapp.utility.MessageType
+import com.devwarex.chatapp.util.MessageState
+import com.devwarex.chatapp.util.MessageType
 
 @Entity(tableName = "chat_messages_table")
 data class Message(

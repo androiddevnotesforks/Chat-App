@@ -1,4 +1,4 @@
-package com.devwarex.chatapp.utility
+package com.devwarex.chatapp.util
 
 enum class MessageType {
     TEXT,

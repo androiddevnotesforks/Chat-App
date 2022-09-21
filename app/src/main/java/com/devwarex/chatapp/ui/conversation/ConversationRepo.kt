@@ -1,15 +1,13 @@
 package com.devwarex.chatapp.ui.conversation
 
 import android.graphics.Bitmap
-import android.util.Log
 import com.devwarex.chatapp.db.AppDao
 import com.devwarex.chatapp.db.Message
 import com.devwarex.chatapp.models.UserModel
 import com.devwarex.chatapp.repos.SendMessageRepo
 import com.devwarex.chatapp.repos.UserByIdRepo
-import com.devwarex.chatapp.utility.MessageState
-import com.devwarex.chatapp.utility.MessageType
-import com.devwarex.chatapp.utility.Paths
+import com.devwarex.chatapp.util.MessageState
+import com.devwarex.chatapp.util.Paths
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -23,10 +21,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
-import java.util.*
 import javax.inject.Inject
 
 class ConversationRepo @Inject constructor(
@@ -53,7 +49,7 @@ class ConversationRepo @Inject constructor(
         currentUid = Firebase.auth.uid ?: ""
         chatId = id
         repo.sync(chatId = chatId)
-        userRepo.getUser(currentUid)
+        userRepo.getUserById(currentUid)
         job.launch {
             launch { database.getMessages(chatId = chatId).collect {
                 _uiState.value = _uiState.value.copy(uid = currentUid, messages = it, isLoading = false)

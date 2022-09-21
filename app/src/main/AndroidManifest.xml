@@ -3,9 +3,17 @@
     package="com.devwarex.chatapp">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-feature android:name="android.hardware.telephony"/>
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.SENDTO"/>
+            <data android:scheme="text/plain"/>
+            <category android:name="android.intent.category.DEFAULT"/>
+        </intent>
+    </queries>
 
     <application
         android:name=".ChatApp"
@@ -51,9 +59,15 @@
             android:theme="@style/Theme.ChatApp"/>
 
         <activity android:name=".ui.contacts.ContactsActivity"
-            android:exported="false"
+            android:exported="true"
             android:label="@string/contacts_title"
-            android:theme="@style/Theme.ChatApp"/>
+            android:theme="@style/Theme.ChatApp">
+            <intent-filter>
+                <action android:name="android.intent.action.SENDTO"/>
+                <data android:scheme="text/plain"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+        </activity>
 
         <activity android:name=".ui.chat.ChatsActivity"
             android:exported="true"

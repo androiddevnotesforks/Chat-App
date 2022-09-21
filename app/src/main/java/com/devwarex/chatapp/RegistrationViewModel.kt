@@ -8,15 +8,13 @@ import androidx.lifecycle.viewModelScope
 import com.devwarex.chatapp.models.UserModel
 import com.devwarex.chatapp.repos.UpdateTokenRepo
 import com.devwarex.chatapp.repos.UserByIdRepo
-import com.devwarex.chatapp.ui.signUp.SignUpUiState
-import com.devwarex.chatapp.utility.Paths
+import com.devwarex.chatapp.util.Paths
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -58,7 +56,7 @@ class RegistrationViewModel @Inject constructor(
         Firebase.auth.signInWithCredential(credential)
             .addOnSuccessListener { task ->
                 if (task.user != null){
-                    userRepo.getUser(uid = task.user?.uid!!)
+                    userRepo.getUserById(uid = task.user?.uid!!)
                     viewModelScope.launch {
                         userRepo.isFound.receiveAsFlow().collect {
                             if(it){

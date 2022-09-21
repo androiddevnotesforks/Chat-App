@@ -1,7 +1,7 @@
 package com.devwarex.chatapp.repos
 
 import android.util.Log
-import com.devwarex.chatapp.utility.Paths
+import com.devwarex.chatapp.util.Paths
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase

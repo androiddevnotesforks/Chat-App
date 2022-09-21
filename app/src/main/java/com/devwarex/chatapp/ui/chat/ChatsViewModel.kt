@@ -4,7 +4,6 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.devwarex.chatapp.ui.signUp.ErrorsState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,13 +19,8 @@ class ChatsViewModel @Inject constructor(
     val uiState: StateFlow<ChatUiState> get() = _uiState
     private val _chatId = MutableLiveData<String>()
     val chatId:LiveData<String> get() = _chatId
-    //private val _email = MutableStateFlow("")
-    //val email: StateFlow<String> get() = _email
-    //private val _emailMessage = MutableStateFlow(ErrorsState.NONE)
-    //val emailMessage: StateFlow<ErrorsState> get() = _emailMessage
-    //val isAdded: Flow<Boolean> get() = repo.isAdded
-    private val _addUser = MutableStateFlow(false)
-    val addUser: StateFlow<Boolean> get() = _addUser
+    private val _toContacts = MutableStateFlow(false)
+    val toContacts: StateFlow<Boolean> get() = _toContacts
 
     fun sync(){
         repo.sync()
@@ -35,16 +29,8 @@ class ChatsViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             launch { repo.uiState.collect { _uiState.value = it } }
-          //  launch { repo.error.collect { _emailMessage.value = it } }
         }
     }
-
-    /*fun setEmail(s: String){
-        if (s.length < 65) {
-            _email.value = repo.clearEmail(s)
-            _emailMessage.value = ErrorsState.NONE
-        }
-    }*/
 
     fun clearChatId(){
         _chatId.value = ""
@@ -59,22 +45,11 @@ class ChatsViewModel @Inject constructor(
     }
 
     fun toContacts(){
-        viewModelScope.launch { _addUser.value = true }
+        viewModelScope.launch { _toContacts.emit(true) }
     }
 
     fun removeToContactsObserver(){
-        viewModelScope.launch { _addUser.value = false }
+        viewModelScope.launch { _toContacts.emit(false) }
     }
-    
-   /* fun addUser(){
-        if (_email.value.isNotBlank() &&
-            _email.value.contains('@') &&
-            _email.value.contains('.')){
-                repo.addUser(email = _email.value)
-            Log.e("error","add")
-        }else{
-            _emailMessage.value = ErrorsState.INVALID_EMAIL
-        }
-    }*/
 
 }

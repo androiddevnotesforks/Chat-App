@@ -4,7 +4,6 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResult
@@ -14,7 +13,6 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.Indication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -23,7 +21,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material.*
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -42,20 +39,18 @@ import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.lifecycleScope
 import coil.compose.rememberAsyncImagePainter
-import coil.compose.rememberImagePainter
 import com.devwarex.chatapp.R
 import com.devwarex.chatapp.db.Message
 import com.devwarex.chatapp.ui.chat.ChatsActivity
 import com.devwarex.chatapp.ui.theme.LightBlack
 import com.devwarex.chatapp.ui.theme.LightBlue
-import com.devwarex.chatapp.utility.BroadCastUtility
-import com.devwarex.chatapp.utility.BroadCastUtility.Companion.CHAT_ID
-import com.devwarex.chatapp.utility.DateUtility
-import com.devwarex.chatapp.utility.MessageState
-import com.devwarex.chatapp.utility.MessageType
+import com.devwarex.chatapp.util.BroadCastUtility
+import com.devwarex.chatapp.util.BroadCastUtility.Companion.CHAT_ID
+import com.devwarex.chatapp.util.DateUtility
+import com.devwarex.chatapp.util.MessageState
+import com.devwarex.chatapp.util.MessageType
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import java.io.FileNotFoundException
 

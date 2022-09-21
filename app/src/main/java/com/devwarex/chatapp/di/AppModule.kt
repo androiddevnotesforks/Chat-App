@@ -1,6 +1,7 @@
 package com.devwarex.chatapp.di
 
 import android.content.Context
+import com.devwarex.chatapp.datastore.DatastoreImpl
 import com.devwarex.chatapp.db.AppDao
 import com.devwarex.chatapp.db.AppRoomDatabase
 
@@ -13,11 +14,15 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-class RoomModule {
+class AppModule {
 
 
     @Provides
     @Singleton
     fun getInstanceRoomDbDao(@ApplicationContext context: Context): AppDao = AppRoomDatabase.getInstance(context).appDbDao()
+
+    @Provides
+    @Singleton
+    fun getInstanceDatastore(@ApplicationContext context: Context): DatastoreImpl = DatastoreImpl(context)
 
 }

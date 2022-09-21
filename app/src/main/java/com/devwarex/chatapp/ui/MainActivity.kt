@@ -17,13 +17,10 @@ import androidx.lifecycle.lifecycleScope
 import com.devwarex.chatapp.R
 import com.devwarex.chatapp.repos.UserByIdRepo
 import com.devwarex.chatapp.ui.chat.ChatsActivity
-import com.devwarex.chatapp.ui.conversation.ConversationActivity
-import com.devwarex.chatapp.ui.signUp.SignUpActivity
 import com.devwarex.chatapp.ui.theme.ChatAppTheme
 import com.devwarex.chatapp.ui.verify.VerifyActivity
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 
@@ -48,7 +45,7 @@ class MainActivity : ComponentActivity() {
             startActivity(signUp)
             finish()
         } else {
-            repo.getUser(user.uid)
+            repo.getUserById(user.uid)
             lifecycleScope.launchWhenCreated {
                 launch { repo.user.receiveAsFlow().collect {
                     if (it.verified && user.phoneNumber != null){

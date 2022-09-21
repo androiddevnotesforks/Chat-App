@@ -3,8 +3,7 @@ package com.devwarex.chatapp.ui.conversation
 import com.devwarex.chatapp.db.AppDao
 import com.devwarex.chatapp.db.Message
 import com.devwarex.chatapp.models.MessageModel
-import com.devwarex.chatapp.utility.MessageState
-import com.devwarex.chatapp.utility.Paths
+import com.devwarex.chatapp.util.Paths
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase

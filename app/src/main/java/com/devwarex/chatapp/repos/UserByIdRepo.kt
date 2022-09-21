@@ -1,7 +1,7 @@
 package com.devwarex.chatapp.repos
 
 import com.devwarex.chatapp.models.UserModel
-import com.devwarex.chatapp.utility.Paths
+import com.devwarex.chatapp.util.Paths
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.Source
 import com.google.firebase.firestore.ktx.firestore
@@ -19,7 +19,7 @@ class UserByIdRepo @Inject constructor() {
     val token = Channel<String>(Channel.UNLIMITED)
     val isVerified = Channel<Boolean>()
     val isFound = Channel<Boolean>(Channel.UNLIMITED)
-    fun getUser(uid: String){
+    fun getUserById(uid: String){
         db.collection(Paths.USERS)
             .document(uid)
             .get(Source.SERVER)
@@ -31,14 +31,11 @@ class UserByIdRepo @Inject constructor() {
                             .launch { user.send(userModel) }
                     }
                 }
-
                 CoroutineScope(Dispatchers.Default).launch {
                     isFound.send(task.isSuccessful && task.result.exists())
                 }
-
             }
     }
-
 
     fun getTokenByUserId(uid: String){
         if (uid.isEmpty()) return

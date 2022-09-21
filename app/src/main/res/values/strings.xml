@@ -50,4 +50,6 @@
     <string name="type_code_title">Type verification code:</string>
     <string name="request_contact_permission_message">To easily connect with friends, Please allow ChatApp access to your contacts.</string>
     <string name="allow_access_title">Allow access</string>
+    <string name="invite_title">Invite</string>
+    <string name="start_chat_title">Tap to start chat</string>
 </resources>

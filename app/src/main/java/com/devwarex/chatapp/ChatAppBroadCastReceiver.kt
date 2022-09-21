@@ -16,7 +16,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.devwarex.chatapp.ui.chat.ChatsActivity
 import com.devwarex.chatapp.ui.conversation.ConversationActivity
-import com.devwarex.chatapp.utility.BroadCastUtility
+import com.devwarex.chatapp.util.BroadCastUtility
 
 
 class ChatAppBroadCastReceiver: BroadcastReceiver() {

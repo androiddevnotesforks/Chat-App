@@ -1,7 +1,7 @@
 package com.devwarex.chatapp.models
 
-import com.devwarex.chatapp.utility.MessageState
-import com.devwarex.chatapp.utility.MessageType
+import com.devwarex.chatapp.util.MessageState
+import com.devwarex.chatapp.util.MessageType
 import com.google.firebase.firestore.ServerTimestamp
 import java.util.*
 
