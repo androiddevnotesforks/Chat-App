@@ -1,7 +1,6 @@
 package com.devwarex.chatapp.db
 
 import androidx.room.*
-import io.reactivex.rxjava3.core.Completable
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -24,13 +23,13 @@ interface AppDao {
     suspend fun updateContactExist(contact: Contact)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertMessage(message: Message): Completable
+    suspend fun insertMessage(message: Message)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertUser(user: User)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertChat(chat: Chat): Completable
+    suspend fun insertChat(chat: Chat)
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertContact(contact: Contact)

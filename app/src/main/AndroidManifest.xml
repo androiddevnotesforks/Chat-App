@@ -100,7 +100,5 @@
         <activity android:name=".ui.RegistrationActivity"
             android:exported="false"
             android:theme="@style/Theme.ChatApp"/>
-
     </application>
-
 </manifest>

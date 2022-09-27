@@ -1,6 +1,5 @@
 package com.devwarex.chatapp.ui.chat
 
-import android.util.Log
 import com.devwarex.chatapp.db.AppDao
 import com.devwarex.chatapp.db.Chat
 import com.devwarex.chatapp.db.User
@@ -12,7 +11,6 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
-import io.reactivex.rxjava3.schedulers.Schedulers
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -80,8 +78,7 @@ class ChatsRepo @Inject constructor(
                             createdAt = chat.timestamp?.time ?: 0L,
                             receiverUid = it
                         )
-                    ).subscribeOn(Schedulers.computation())
-                        .subscribe({userByIdRepo.getUserById(it)},{ Log.e("save_chat","error: ${it.message}")})
+                    )
                 }
             }
         }
