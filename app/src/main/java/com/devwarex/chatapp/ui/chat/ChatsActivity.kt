@@ -106,7 +106,10 @@ fun ChatsScreen(modifier: Modifier = Modifier){
         floatingActionButton = {
             IconButton(
                 onClick = { viewModel.toContacts() },
-                modifier = Modifier.background(color = MaterialTheme.colors.secondary, shape = MaterialTheme.shapes.small.copy(all = CornerSize(12.dp)))
+                modifier = Modifier.background(
+                    color = MaterialTheme.colors.secondary,
+                    shape = MaterialTheme.shapes.small.copy(all = CornerSize(12.dp))
+                )
             ) {
                 Icon(painter = painterResource(id = R.drawable.ic_add), contentDescription = "Add chat" )
             }
@@ -114,10 +117,9 @@ fun ChatsScreen(modifier: Modifier = Modifier){
         floatingActionButtonPosition = FabPosition.End,
         isFloatingActionButtonDocked = false
     ){
-
         if (chats.isEmpty()){
             Column(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().padding(it),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -140,7 +142,7 @@ fun ChatsScreen(modifier: Modifier = Modifier){
             }
 
         }else{
-            LazyColumn(modifier = modifier){
+            LazyColumn(modifier = modifier.padding(it)){
                 items(chats){
                     ChatCard(chat = it)
                 }

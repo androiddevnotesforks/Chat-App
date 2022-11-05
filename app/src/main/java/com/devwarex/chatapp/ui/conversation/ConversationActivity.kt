@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
@@ -27,13 +28,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.devwarex.chatapp.ui.theme.ChatAppTheme
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.window.DialogProperties
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -79,6 +80,16 @@ class ConversationActivity : ComponentActivity() {
             launch { viewModel.shouldFetchChat.collect { if (it) returnToChat() } }
         }
         viewModel.insert.observe(this,this::insertPhoto)
+        val callback = object :OnBackPressedCallback(true){
+            override fun handleOnBackPressed() {
+               returnToChat()
+            }
+        }
+
+        onBackPressedDispatcher.addCallback(
+            this,
+            callback
+        )
     }
 
     private fun insertPhoto(b: Boolean){
@@ -131,7 +142,6 @@ class ConversationActivity : ComponentActivity() {
             intent.putExtra(CHAT_ID, BroadCastUtility.CONVERSATION_ON_STOP_KEY)
             sendBroadcast(intent)
         }
-
         viewModel.onStop()
     }
 
@@ -149,26 +159,6 @@ class ConversationActivity : ComponentActivity() {
             finish()
         }
         lifecycleScope.cancel()
-    }
-
-    override fun onBackPressed() {
-        viewModel.backState.observe(this){
-            if (it.isImagePreview || it.isPreviewBeforeSending){
-                if (it.isPreviewBeforeSending){
-                    viewModel.backState.removeObservers(this)
-                    viewModel.closePreviewImageForSending()
-                }
-                if (it.isImagePreview){
-                    viewModel.backState.removeObservers(this)
-                    viewModel.closePreviewImage()
-                }
-            }else{
-                super.onBackPressed()
-                returnToChat()
-                viewModel.backState.removeObservers(this)
-            }
-        }
-
     }
 }
 
@@ -223,7 +213,8 @@ fun MainLayoutScreen(modifier: Modifier = Modifier){
             }
         }
     ) {
-        ConstraintLayout(modifier = Modifier.alpha(if (previewBeforeSending || isPreviewImage) 0.4f else 1f)){
+        modifier.padding(it)
+        ConstraintLayout{
             val ( list , edit ) = createRefs()
             LazyColumn(
                 modifier = modifier
@@ -283,10 +274,18 @@ fun MainLayoutScreen(modifier: Modifier = Modifier){
 
         }
         if (previewBeforeSending && bitmap != null){
-            PreviewImageForSending(bitmap = bitmap, viewModel = viewModel)
+            PreviewImageForSending(
+                bitmap = bitmap,
+                viewModel = viewModel,
+                modifier = modifier
+            )
         }
         if (isPreviewImage && previewImage.isNotEmpty()){
-            PreviewImage(img = previewImage, viewModel = viewModel)
+            ImageMessageView(
+                img = previewImage,
+                viewModel = viewModel,
+                modifier = modifier
+            )
         }
     }
 }
@@ -321,8 +320,13 @@ fun MainMessageCard(msg: Message,uid: String,viewModel: MessagesViewModel){
         }
     }
 }
+
 @Composable
-fun ReceiveMessageCard(msg: Message,modifier: Modifier,viewModel: MessagesViewModel) {
+fun ReceiveMessageCard(
+    msg: Message,
+    modifier: Modifier,
+    viewModel: MessagesViewModel
+) {
     Card(
         shape = MaterialTheme.shapes.medium.copy(
             bottomStart = CornerSize(6.dp),
@@ -426,7 +430,7 @@ fun SenderMessageCard(
                             .height(200.dp)
                             .padding(top = 6.dp, start = 6.dp, end = 6.dp)
                             .clickable { viewModel.onPreviewImage(msg.body) },
-                        contentScale = ContentScale.Fit
+                        contentScale = ContentScale.Crop
                     )
                 }
                 else -> { }
@@ -464,115 +468,86 @@ fun SenderMessageCard(
 }
 
 @Composable
-fun PreviewImageForSending(
-    bitmap: Bitmap,
-    modifier: Modifier = Modifier,
-    viewModel: MessagesViewModel
+fun ImageMessageView(
+    img: String,
+    viewModel: MessagesViewModel,
+    modifier: Modifier
 ){
-    ConstraintLayout(modifier = modifier.clickable(
-        onClick = {/** Ignore */},
-        enabled = false
-    )) {
-        val (closeButton,sendButton,image,loader) = createRefs()
-        Image(
-            bitmap = bitmap.asImageBitmap(),
-            contentDescription = "Preview image",
-            modifier = modifier
-                .fillMaxSize()
-                .constrainAs(image) {
-                    top.linkTo(parent.top)
-                    end.linkTo(parent.end)
-                    start.linkTo(parent.start)
-                    bottom.linkTo(parent.bottom)
-                }
-        )
-        IconButton(
-            onClick = { viewModel.closePreviewImageForSending() },
-            modifier = modifier
-                .constrainAs(closeButton) {
-                    top.linkTo(parent.top)
-                    start.linkTo(parent.start)
-                }
-                .padding(all = 8.dp)
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_back),
-                contentDescription = "back icon",
-                tint = Color.Gray
-            )
-        }
-        val progress = viewModel.uploadProgress.collectAsState()
-        if (progress.value == 0){
-            FloatingActionButton(
-                onClick = { viewModel.sendImage() },
-                modifier = modifier
-                    .constrainAs(sendButton) {
-                        end.linkTo(parent.end)
-                        bottom.linkTo(parent.bottom)
-                    }
-                    .padding(all = 16.dp)
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_send),
-                    contentDescription = "send image"
+    AlertDialog(
+        modifier = modifier
+            .wrapContentSize(),
+        backgroundColor = MaterialTheme.colors.onSurface.copy(alpha = 0f),
+        onDismissRequest = { viewModel.closePreviewImage() },
+        properties = DialogProperties(dismissOnBackPress = true,dismissOnClickOutside = true),
+        text = {
+            Column(modifier = modifier.fillMaxWidth()) {
+                Image(
+                    painter = rememberAsyncImagePainter(model = img),
+                    contentDescription = "photo message",
+                    modifier = modifier
+                        .fillMaxWidth()
+                        .align(Alignment.CenterHorizontally),
+                    contentScale = ContentScale.Inside
                 )
             }
-        }else{
-            val animateProgress = animateFloatAsState(targetValue = progress.value.toFloat(), animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec)
-            CircularProgressIndicator(
-                modifier = modifier
-                    .constrainAs(sendButton) {
-                        end.linkTo(parent.end)
-                        bottom.linkTo(parent.bottom)
-                    }
-                    .padding(all = 16.dp),
-                color = MaterialTheme.colors.secondary,
-                progress = animateProgress.value/100)
-        }
-        if (progress.value == 100){
-            viewModel.closePreviewImageForSending()
-        }
-    }
+        },
+        buttons = {}
+    )
 }
 
 @Composable
-fun PreviewImage(
-    img: String,
-    modifier: Modifier = Modifier,
+fun PreviewImageForSending(
+    bitmap: Bitmap,
+    modifier: Modifier,
     viewModel: MessagesViewModel
 ){
-    ConstraintLayout(modifier = modifier.clickable(
-        onClick = {/** Ignore */},
-        enabled = false
-    )) {
-        val (closeButton,image) = createRefs()
-        Image(
-            painter = rememberAsyncImagePainter(model = img),
-            contentDescription = "Preview image",
-            modifier = modifier
-                .fillMaxSize()
-                .constrainAs(image) {
-                    top.linkTo(parent.top)
-                    end.linkTo(parent.end)
-                    start.linkTo(parent.start)
-                    bottom.linkTo(parent.bottom)
-                }
-        )
-        IconButton(
-            onClick = { viewModel.closePreviewImage() },
-            modifier = modifier
-                .constrainAs(closeButton) {
-                    top.linkTo(parent.top)
-                    start.linkTo(parent.start)
-                }
-                .padding(all = 8.dp)
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_back),
-                contentDescription = "back icon",
-                tint = Color.Gray
+    AlertDialog(
+        modifier = modifier.wrapContentSize(),
+        backgroundColor = MaterialTheme.colors.onSurface.copy(alpha = 0f),
+        onDismissRequest = { viewModel.closePreviewImageForSending() },
+        properties = DialogProperties(dismissOnBackPress = true,dismissOnClickOutside = true),
+        text = {
+            Image(
+                bitmap = bitmap.asImageBitmap(),
+                contentDescription = "Preview image",
+                modifier = modifier
+                    .wrapContentSize(),
+                contentScale = ContentScale.Inside
             )
+        },
+        buttons = {
+            Column(modifier = modifier.fillMaxWidth()) {
+                val progress = viewModel.uploadProgress.collectAsState()
+                if (progress.value == 0){
+                    FloatingActionButton(
+                        onClick = { viewModel.sendImage() },
+                        modifier = modifier
+                            .padding(all = 16.dp)
+                            .align(Alignment.End)
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_send),
+                            contentDescription = "send image"
+                        )
+                    }
+                }else{
+                    val animateProgress = animateFloatAsState(
+                        targetValue = progress.value.toFloat(),
+                        animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec
+                    )
+                    CircularProgressIndicator(
+                        modifier = modifier
+                            .padding(all = 16.dp)
+                            .align(Alignment.End),
+                        color = MaterialTheme.colors.secondary,
+                        progress = animateProgress.value/100)
+                }
+                if (progress.value == 100){
+                    viewModel.closePreviewImageForSending()
+                }
+            }
+
         }
-    }
+    )
 }
 
