@@ -32,6 +32,7 @@ import com.devwarex.chatapp.R
 import com.devwarex.chatapp.db.ChatRelations
 import com.devwarex.chatapp.ui.contacts.ContactsActivity
 import com.devwarex.chatapp.ui.conversation.ConversationActivity
+import com.devwarex.chatapp.ui.profile.ProfileActivity
 import com.devwarex.chatapp.ui.theme.ChatAppTheme
 import com.devwarex.chatapp.util.BroadCastUtility
 import com.devwarex.chatapp.util.DateUtility
@@ -44,8 +45,6 @@ import kotlinx.coroutines.launch
 class ChatsActivity : ComponentActivity(){
 
     private val viewModel:  ChatsViewModel by viewModels()
-
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,7 +62,14 @@ class ChatsActivity : ComponentActivity(){
         viewModel.chatId.observe(this,this::toConversation)
         lifecycleScope.launchWhenStarted {
             launch { viewModel.toContacts.collectLatest { if (it){ toContacts()} } }
+            launch { viewModel.toProfile.collect{ if (it) toProfile() } }
         }
+    }
+
+    private fun toProfile(){
+        val profileIntent = Intent(this,ProfileActivity::class.java)
+        viewModel.removeToContactsObserver()
+        startActivity(profileIntent)
     }
 
     private fun toContacts(){
@@ -94,13 +100,24 @@ class ChatsActivity : ComponentActivity(){
 }
 
 @Composable
-fun ChatsScreen(modifier: Modifier = Modifier){
-    val viewModel: ChatsViewModel = hiltViewModel()
+fun ChatsScreen(
+    modifier: Modifier = Modifier,
+    viewModel: ChatsViewModel = hiltViewModel()
+){
     val (chats,isLoading) = viewModel.uiState.collectAsState().value
     Scaffold(
         topBar = {
             TopAppBar(
-                title ={ Text(text = stringResource(id = R.string.app_name)) }
+                title = { Text(text = stringResource(id = R.string.app_name)) },
+                actions = {
+                    IconButton(onClick = { viewModel.navigateToProfile() }) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_account),
+                            contentDescription = "profile",
+                            tint = MaterialTheme.colors.onSurface
+                        )
+                    }
+                }
             )
         },
         floatingActionButton = {
@@ -116,10 +133,11 @@ fun ChatsScreen(modifier: Modifier = Modifier){
          },
         floatingActionButtonPosition = FabPosition.End,
         isFloatingActionButtonDocked = false
-    ){
-        if (chats.isEmpty()){
+    ){ padding ->
+        modifier.padding(padding)
+        if (chats.isEmpty() && !isLoading){
             Column(
-                modifier = Modifier.fillMaxSize().padding(it),
+                modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -142,7 +160,7 @@ fun ChatsScreen(modifier: Modifier = Modifier){
             }
 
         }else{
-            LazyColumn(modifier = modifier.padding(it)){
+            LazyColumn(modifier = modifier){
                 items(chats){
                     ChatCard(chat = it)
                 }
@@ -154,8 +172,11 @@ fun ChatsScreen(modifier: Modifier = Modifier){
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun ChatCard(chat: ChatRelations){
-    val viewModel: ChatsViewModel = hiltViewModel()
+fun ChatCard(
+    chat: ChatRelations,
+    viewModel: ChatsViewModel = hiltViewModel()
+){
+
     Card(
         shape = MaterialTheme.shapes.medium,
         elevation = 4.dp,

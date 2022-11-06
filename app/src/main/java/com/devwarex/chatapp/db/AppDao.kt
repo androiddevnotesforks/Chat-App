@@ -7,6 +7,9 @@ import kotlinx.coroutines.flow.Flow
 interface AppDao {
 
 
+    @Query("select * from user_table where uid = :uid")
+    fun getUserById(uid: String):Flow<User?>
+
     @Query("select * from chat_table where id = :chatId")
     fun getChatByChatId(chatId: String): Flow<ChatRelations?>
 

@@ -1,5 +1,7 @@
 package com.devwarex.chatapp.repos
 
+import com.devwarex.chatapp.db.AppDao
+import com.devwarex.chatapp.db.User
 import com.devwarex.chatapp.models.UserModel
 import com.devwarex.chatapp.util.Paths
 import com.google.firebase.auth.ktx.auth
@@ -12,7 +14,9 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-class UserByIdRepo @Inject constructor() {
+class UserByIdRepo @Inject constructor(
+    private val database: AppDao
+) {
 
     private val db = Firebase.firestore
     val user = Channel<UserModel>(Channel.UNLIMITED)
@@ -28,7 +32,19 @@ class UserByIdRepo @Inject constructor() {
                     val userModel: UserModel? = task.result.toObject(UserModel::class.java)
                     if (userModel != null){
                         CoroutineScope(Dispatchers.Unconfined)
-                            .launch { user.send(userModel) }
+                            .launch {
+                                user.send(userModel)
+                                database.insertUser(
+                                    user = User(
+                                        uid = userModel.uid,
+                                        img = userModel.img,
+                                        name = userModel.name,
+                                        joinedAt = userModel.timestamp?.time ?: 0,
+                                        email = userModel.email,
+                                        phone = userModel.phone
+                                    )
+                                )
+                            }
                     }
                 }
                 CoroutineScope(Dispatchers.Default).launch {

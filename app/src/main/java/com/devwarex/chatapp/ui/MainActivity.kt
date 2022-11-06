@@ -21,10 +21,16 @@ import com.devwarex.chatapp.ui.theme.ChatAppTheme
 import com.devwarex.chatapp.ui.verify.VerifyActivity
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var repo: UserByIdRepo
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,7 +44,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        val repo = UserByIdRepo()
         val user = Firebase.auth.currentUser
         if (user == null) {
             val signUp = Intent(this, RegistrationActivity::class.java)

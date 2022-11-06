@@ -19,12 +19,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.devwarex.chatapp.R
-import com.devwarex.chatapp.ui.MainActivity
-import com.devwarex.chatapp.ui.conversation.ConversationActivity
 import com.devwarex.chatapp.ui.theme.ChatAppTheme
 import com.devwarex.chatapp.ui.theme.DarkBackground
 import com.devwarex.chatapp.ui.theme.LightBlue
@@ -60,8 +57,10 @@ class SignUpActivity : ComponentActivity() {
 
 
 @Composable
-fun SignUpScreen(modifier: Modifier = Modifier){
-    val viewModel = hiltViewModel<SignUpViewModel>()
+fun SignUpScreen(
+    modifier: Modifier = Modifier,
+    viewModel: SignUpViewModel = hiltViewModel()
+){
     val (name,email,password,confirmPassword,isLoading,isSucceed,errors) = viewModel.uiState.collectAsState().value
     Column(
         modifier = modifier

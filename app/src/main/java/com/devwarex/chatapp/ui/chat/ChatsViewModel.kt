@@ -20,7 +20,9 @@ class ChatsViewModel @Inject constructor(
     private val _chatId = MutableLiveData<String>()
     val chatId:LiveData<String> get() = _chatId
     private val _toContacts = MutableStateFlow(false)
+    private val _toProfile = MutableStateFlow(false)
     val toContacts: StateFlow<Boolean> get() = _toContacts
+    val toProfile: StateFlow<Boolean> get() = _toProfile
 
     fun sync(){
         repo.sync()
@@ -40,6 +42,10 @@ class ChatsViewModel @Inject constructor(
         _chatId.value = id
     }
 
+    fun navigateToProfile() = viewModelScope.launch {
+        _toProfile.emit(true)
+    }
+
     fun removeListener(){
         repo.removeListener()
     }
@@ -48,8 +54,10 @@ class ChatsViewModel @Inject constructor(
         viewModelScope.launch { _toContacts.emit(true) }
     }
 
-    fun removeToContactsObserver(){
-        viewModelScope.launch { _toContacts.emit(false) }
+    fun removeToContactsObserver() = viewModelScope.launch {
+        _toContacts.emit(false)
+        _toProfile.emit(false)
     }
+
 
 }

@@ -38,7 +38,6 @@ import com.google.firebase.auth.PhoneAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
@@ -208,8 +207,10 @@ class VerifyActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun VerifyScreen(modifier: Modifier = Modifier){
-    val viewModel = hiltViewModel<VerifyViewModel>()
+fun VerifyScreen(
+    modifier: Modifier = Modifier,
+    viewModel:VerifyViewModel = hiltViewModel()
+){
     val (sent,requestingCode,verifying,success,drop,selectedCountry,phone) = viewModel.uiState.collectAsState().value
     Column(
         modifier = modifier

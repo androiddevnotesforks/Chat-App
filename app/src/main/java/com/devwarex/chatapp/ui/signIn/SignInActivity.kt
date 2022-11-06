@@ -23,8 +23,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.devwarex.chatapp.R
-import com.devwarex.chatapp.ui.MainActivity
-import com.devwarex.chatapp.ui.conversation.ConversationActivity
 import com.devwarex.chatapp.ui.signUp.*
 import com.devwarex.chatapp.ui.theme.ChatAppTheme
 import com.devwarex.chatapp.ui.theme.DarkBackground
@@ -58,8 +56,10 @@ class SignInActivity : ComponentActivity() {
 }
 
 @Composable
-fun SignInScreen(modifier: Modifier = Modifier) {
-    val viewModel = hiltViewModel<SignInViewModel>()
+fun SignInScreen(
+    modifier: Modifier = Modifier,
+    viewModel: SignInViewModel = hiltViewModel()
+) {
     val (email,password,isLoading,isSucceed,errors) = viewModel.uiState.collectAsState().value
     Column(
         modifier = modifier

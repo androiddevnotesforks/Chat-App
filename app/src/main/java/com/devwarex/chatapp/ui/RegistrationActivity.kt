@@ -21,7 +21,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.devwarex.chatapp.R
 import com.devwarex.chatapp.RegistrationViewModel
 import com.devwarex.chatapp.ui.signIn.SignInActivity
@@ -131,8 +131,9 @@ class RegistrationActivity : ComponentActivity() {
 
 
 @Composable
-fun MainScreen(){
-    val viewModel = hiltViewModel<RegistrationViewModel>()
+fun MainScreen(
+    viewModel: RegistrationViewModel = viewModel()
+){
     Column(modifier = Modifier.verticalScroll(state = ScrollState(0))) {
         Icon(
             painter = painterResource(id = R.drawable.logo),

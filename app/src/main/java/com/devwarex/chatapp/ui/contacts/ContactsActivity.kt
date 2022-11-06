@@ -35,6 +35,7 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.loader.app.LoaderManager
 import androidx.loader.content.CursorLoader
 import androidx.loader.content.Loader
@@ -211,8 +212,10 @@ class ContactsActivity : ComponentActivity(),LoaderManager.LoaderCallbacks<Curso
 }
 
 @Composable
-fun ContactsScreen(modifier: Modifier = Modifier){
-    val viewModel = hiltViewModel<ContactsViewModel>()
+fun ContactsScreen(
+    modifier: Modifier = Modifier,
+    viewModel: ContactsViewModel = hiltViewModel()
+){
     val uiState = viewModel.uiState.collectAsState()
     Scaffold(
         topBar = {
@@ -220,7 +223,8 @@ fun ContactsScreen(modifier: Modifier = Modifier){
                 title = { Text(text = "Select contact")}
             )
         }
-    ) {
+    ) { padding ->
+        modifier.padding(padding)
         ConstraintLayout(
             modifier = modifier.fillMaxSize()
         ) {

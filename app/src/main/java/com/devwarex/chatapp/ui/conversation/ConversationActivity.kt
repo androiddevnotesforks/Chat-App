@@ -39,6 +39,7 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import com.devwarex.chatapp.R
 import com.devwarex.chatapp.db.Message
@@ -173,8 +174,10 @@ fun TextWithNormalPaddingPreview(modifier: Modifier = Modifier) {
 
 
 @Composable
-fun MainLayoutScreen(modifier: Modifier = Modifier){
-    val viewModel =  hiltViewModel<MessagesViewModel>()
+fun MainLayoutScreen(
+    modifier: Modifier = Modifier,
+    viewModel: MessagesViewModel = hiltViewModel()
+){
     val (messages,enable,uid,isLoading,chat,user,availability,typing,
         previewBeforeSending,bitmap,isPreviewImage,previewImage) = viewModel.uiState.collectAsState().value
     Scaffold(
@@ -212,8 +215,8 @@ fun MainLayoutScreen(modifier: Modifier = Modifier){
                 }
             }
         }
-    ) {
-        modifier.padding(it)
+    ) { padding ->
+        modifier.padding(padding)
         ConstraintLayout{
             val ( list , edit ) = createRefs()
             LazyColumn(

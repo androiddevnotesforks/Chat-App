@@ -34,7 +34,7 @@ class ConversationRepo @Inject constructor(
 ) {
 
     private var currentUser: UserModel? = null
-    private val _uiState = MutableStateFlow<MessageUiState>(MessageUiState())
+    private val _uiState = MutableStateFlow(MessageUiState())
     val uiState: StateFlow<MessageUiState> get() = _uiState
     private var token: String = ""
     private var chatId: String = ""
