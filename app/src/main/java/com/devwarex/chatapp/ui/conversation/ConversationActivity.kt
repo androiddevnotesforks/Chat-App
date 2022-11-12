@@ -1,9 +1,16 @@
 package com.devwarex.chatapp.ui.conversation
 
+import android.Manifest
+import android.content.Context
 import android.content.Intent
+import android.content.IntentSender
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.location.LocationManager
 import android.os.Bundle
+import android.os.Looper
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
@@ -34,16 +41,19 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
+import androidx.core.app.ActivityCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import com.devwarex.chatapp.R
 import com.devwarex.chatapp.db.Message
+import com.devwarex.chatapp.models.LocationPin
 import com.devwarex.chatapp.ui.chat.ChatsActivity
+import com.devwarex.chatapp.ui.theme.Blue200
 import com.devwarex.chatapp.ui.theme.LightBlack
 import com.devwarex.chatapp.ui.theme.LightBlue
 import com.devwarex.chatapp.util.BroadCastUtility
@@ -51,6 +61,13 @@ import com.devwarex.chatapp.util.BroadCastUtility.Companion.CHAT_ID
 import com.devwarex.chatapp.util.DateUtility
 import com.devwarex.chatapp.util.MessageState
 import com.devwarex.chatapp.util.MessageType
+import com.google.android.gms.common.api.ResolvableApiException
+import com.google.android.gms.location.*
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.tasks.Task
+import com.google.gson.Gson
+import com.google.maps.android.compose.*
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
@@ -64,6 +81,26 @@ class ConversationActivity : ComponentActivity() {
     private val viewModel by viewModels<MessagesViewModel>()
     private lateinit var galleryIntent: Intent
     private lateinit var pickPictureIntentLauncher: ActivityResultLauncher<Intent?>
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var locationCallback: LocationCallback
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        when {
+            permissions.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false) -> {
+                // Precise location access granted.
+                viewModel.isLocationPermissionGranted(true)
+            }
+            permissions.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false) -> {
+                // Only approximate location access granted.
+
+            } else -> {
+            // No location access granted.
+            viewModel.locationPermissionDenied()
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,18 +112,44 @@ class ConversationActivity : ComponentActivity() {
                 ) { MainLayoutScreen() }
             }
         }
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        viewModel.isLocationPermissionGranted(
+            ActivityCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION) ==
+                    PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        )
         galleryIntent = Intent(Intent.ACTION_PICK).apply { type = "image/*"  }
         pickPictureLauncher()
         lifecycleScope.launchWhenCreated {
             launch { viewModel.shouldFetchChat.collect { if (it) returnToChat() } }
+            launch { viewModel.locationUiState.collect{
+                Log.e("location_state",Gson().toJson(it))
+                if (it.requestLastKnownLocation){
+                    if (!it.isLocationEnabled){
+                        requestEnableLocation()
+                    }
+                    if (it.isLocationEnabled && !it.isLocationPermissionGranted){
+                        requestPermissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION))
+                        viewModel.pickLocation()
+                    }
+                    if (it.isLocationEnabled && it.isLocationPermissionGranted){
+                        updateLocation()
+                        viewModel.pickLocation()
+                        fusedLocationClient.requestLocationUpdates(createLocationRequest(),locationCallback,
+                            Looper.getMainLooper())
+
+                    }
+                }
+            } }
         }
+
         viewModel.insert.observe(this,this::insertPhoto)
+
         val callback = object :OnBackPressedCallback(true){
             override fun handleOnBackPressed() {
                returnToChat()
             }
         }
-
         onBackPressedDispatcher.addCallback(
             this,
             callback
@@ -97,9 +160,37 @@ class ConversationActivity : ComponentActivity() {
         if (b){ pickPhoto() }
     }
 
+    private fun createLocationRequest(): LocationRequest = LocationRequest.create().apply {
+        interval = 10000
+        fastestInterval = 5000
+        priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+    }
+
+
+    private fun requestEnableLocation(){
+        val locationBuilder = LocationSettingsRequest.Builder()
+            .addLocationRequest(createLocationRequest())
+        val settingsClient = LocationServices.getSettingsClient(this)
+        val task: Task<LocationSettingsResponse> = settingsClient.checkLocationSettings(locationBuilder.build())
+        task.addOnSuccessListener {
+        }
+        task.addOnFailureListener {
+            if (it is ResolvableApiException){
+                try {
+                    it.startResolutionForResult(this,500)
+                } catch (sendEx: IntentSender.SendIntentException) {
+                    Log.e("enable_location",sendEx.message.toString())
+                }
+            }
+        }
+
+    }
+
+
     private fun pickPhoto(){
         pickPictureIntentLauncher.launch(galleryIntent)
     }
+
     private fun pickPictureLauncher() {
         pickPictureIntentLauncher = registerForActivityResult(
             ActivityResultContracts.StartActivityForResult()
@@ -134,8 +225,36 @@ class ConversationActivity : ComponentActivity() {
             intent.putExtra(CHAT_ID, chatId)
             sendBroadcast(intent)
         }
+        val manager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        viewModel.isLocationEnabled(manager.isProviderEnabled(LocationManager.GPS_PROVIDER))
     }
 
+    private fun stopUpdateLocation(){
+        if (this::locationCallback.isInitialized) {
+            fusedLocationClient.removeLocationUpdates(locationCallback)
+        }
+    }
+
+    private fun updateLocation(){
+        var counter = 0
+        locationCallback = object : LocationCallback(){
+            override fun onLocationResult(p0: LocationResult) {
+                super.onLocationResult(p0)
+                for (location in p0.locations){
+                    Log.e("counter","$counter")
+                    viewModel.updateLocationPin(
+                        location.latitude,
+                        location.longitude
+                    )
+                    if(counter == 2){
+                        stopUpdateLocation()
+                        break
+                    }
+                    counter++
+                }
+            }
+        }
+    }
     override fun onStop() {
         super.onStop()
         Intent().also { intent ->
@@ -144,6 +263,7 @@ class ConversationActivity : ComponentActivity() {
             sendBroadcast(intent)
         }
         viewModel.onStop()
+        stopUpdateLocation()
     }
 
     override fun onDestroy() {
@@ -178,8 +298,7 @@ fun MainLayoutScreen(
     modifier: Modifier = Modifier,
     viewModel: MessagesViewModel = hiltViewModel()
 ){
-    val (messages,enable,uid,isLoading,chat,user,availability,typing,
-        previewBeforeSending,bitmap,isPreviewImage,previewImage) = viewModel.uiState.collectAsState().value
+    val uiState = viewModel.uiState.collectAsState().value
     Scaffold(
         topBar = {
             Box(
@@ -192,7 +311,9 @@ fun MainLayoutScreen(
                     .align(Alignment.CenterStart)
                     .padding(start = 16.dp)) {
                     Image(
-                        painter = if (user?.img.isNullOrEmpty()) painterResource(id = R.drawable.user) else rememberAsyncImagePainter(model = user?.img),
+                        painter = if (uiState.receiverUser?.img.isNullOrEmpty())
+                            painterResource(id = R.drawable.user) else
+                                rememberAsyncImagePainter(model = uiState.receiverUser?.img),
                         contentDescription = "User Image",
                         modifier = Modifier
                             .size(40.dp)
@@ -201,13 +322,13 @@ fun MainLayoutScreen(
                     )
                     Column(Modifier.padding(start = 8.dp)) {
                         Text(
-                            text = user?.name ?: "Name",
+                            text = uiState.receiverUser?.name ?: "Name",
                             style = MaterialTheme.typography.h5,
                             color = Color.White
                         )
                         Text(
-                            text = if (availability && typing) stringResource(id = R.string.typing_name)
-                            else if (availability) stringResource(id = R.string.online_name) else stringResource(id = R.string.offline_name),
+                            text = if (uiState.availability && uiState.typing) stringResource(id = R.string.typing_name)
+                            else if (uiState.availability) stringResource(id = R.string.online_name) else stringResource(id = R.string.offline_name),
                             style = MaterialTheme.typography.caption,
                             color = Color.White
                         )
@@ -230,9 +351,9 @@ fun MainLayoutScreen(
                     .fillMaxWidth(),
                 reverseLayout = true
             ) {
-                if (uid.isNotEmpty()) {
-                    items(messages) {
-                        MainMessageCard(msg = it, uid = uid, viewModel = viewModel)
+                if (uiState.uid.isNotEmpty()) {
+                    items(uiState.messages) {
+                        MainMessageCard(msg = it, uid = uiState.uid, viewModel = viewModel)
                     }
                 }
             }
@@ -249,7 +370,7 @@ fun MainLayoutScreen(
                 MessageEditText(modifier.weight(1f), viewModel = viewModel, text = text.value)
                 if (text.value.isNotBlank()) {
                     FloatingActionButton(
-                        onClick = { if (enable) viewModel.send() },
+                        onClick = { if (uiState.enable) viewModel.send() },
                         modifier = modifier
                             .padding(end = 8.dp)
                             .align(alignment = Alignment.CenterVertically),
@@ -276,18 +397,27 @@ fun MainLayoutScreen(
             }
 
         }
-        if (previewBeforeSending && bitmap != null){
+        if (uiState.previewBeforeSending && uiState.bitmap != null){
             PreviewImageForSending(
-                bitmap = bitmap,
+                bitmap = uiState.bitmap,
                 viewModel = viewModel,
                 modifier = modifier
             )
         }
-        if (isPreviewImage && previewImage.isNotEmpty()){
+        if (uiState.isPreviewImage && uiState.previewImage.isNotEmpty()){
             ImageMessageView(
-                img = previewImage,
+                img = uiState.previewImage,
                 viewModel = viewModel,
                 modifier = modifier
+            )
+        }
+    }
+
+    if (uiState.requestLocation && uiState.locationPermissionGranted){
+        if(uiState.locationPin.lat != 0.0 && uiState.locationPin.lng != 0.0) {
+            MapDialog(
+                locationPin = uiState.locationPin,
+                viewModel = viewModel
             )
         }
     }
@@ -307,7 +437,25 @@ fun MessageEditText(modifier: Modifier,text: String,viewModel: MessagesViewModel
             focusedIndicatorColor = Color.Transparent,
             unfocusedIndicatorColor = Color.Transparent,
             textColor = MaterialTheme.colors.onSurface
-        )
+        ),
+        trailingIcon = {
+            if (text.isBlank()) {
+                IconButton(
+                    onClick = { viewModel.pickLocation() }
+                ) {
+                    val uiState = viewModel.uiState.collectAsState().value
+                    if (uiState.requestLocation){
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    }else {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_location),
+                            contentDescription = "Location label",
+                            tint = Blue200
+                        )
+                    }
+                }
+            }
+        }
     )
 }
 
@@ -361,6 +509,9 @@ fun ReceiveMessageCard(
                             .clickable { viewModel.onPreviewImage(msg.body) },
                         contentScale = ContentScale.Fit
                     )
+                }
+                MessageType.PIN_LOCATION ->{
+                    MapView(pin = LocationPin(lat = msg.pin_lat,msg.pin_lng), userName = viewModel.uiState.value.receiverUser?.name ?: "")
                 }
                 else -> { }
             }
@@ -436,6 +587,10 @@ fun SenderMessageCard(
                         contentScale = ContentScale.Crop
                     )
                 }
+
+                MessageType.PIN_LOCATION -> {
+                    MapView(pin = LocationPin(lat = msg.pin_lat,msg.pin_lng), userName = "You")
+                }
                 else -> { }
             }
 
@@ -467,6 +622,28 @@ fun SenderMessageCard(
                     )
             }
         }
+    }
+}
+
+@Composable
+fun MapView(
+    pin: LocationPin,
+    userName: String
+){
+    val locationPin = LatLng(pin.lat, pin.lng)
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(locationPin, 17f)
+    }
+    GoogleMap(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(max = 280.dp),
+        cameraPositionState = cameraPositionState
+    ) {
+        Marker(
+            state = MarkerState(position = locationPin),
+            title = userName
+        )
     }
 }
 
@@ -552,5 +729,51 @@ fun PreviewImageForSending(
 
         }
     )
+}
+
+
+
+@Composable
+fun MapDialog(
+    locationPin: LocationPin,
+    viewModel: MessagesViewModel
+){
+    Dialog(
+        onDismissRequest = { viewModel.dismissMapDialog() },
+        properties = DialogProperties(dismissOnBackPress = true,dismissOnClickOutside = false)
+    ) {
+        val currentLocation = LatLng(locationPin.lat, locationPin.lng)
+        val cameraPositionState = rememberCameraPositionState {
+            position = CameraPosition.fromLatLngZoom(currentLocation, 17f)
+        }
+        Column(
+            modifier = Modifier
+                .background(color = MaterialTheme.colors.surface)
+                .padding(bottom = 8.dp)
+        ) {
+            GoogleMap(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 400.dp, min = 300.dp),
+                cameraPositionState = cameraPositionState,
+                uiSettings = MapUiSettings().copy(
+                    zoomControlsEnabled = false,
+                    myLocationButtonEnabled = false
+                ),
+                onMyLocationClick = {},
+                properties = MapProperties().copy(
+                    isMyLocationEnabled = true
+                )
+            ) {
+            }
+            Spacer(modifier = Modifier.padding(top = 16.dp))
+            Button(
+                onClick = { viewModel.shareCurrentLocation() },
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            ) {
+                Text(text = "Share Current Location")
+            }
+        }
+    }
 }
 

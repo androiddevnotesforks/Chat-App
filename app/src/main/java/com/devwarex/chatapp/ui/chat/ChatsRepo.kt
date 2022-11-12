@@ -2,9 +2,7 @@ package com.devwarex.chatapp.ui.chat
 
 import com.devwarex.chatapp.db.AppDao
 import com.devwarex.chatapp.db.Chat
-import com.devwarex.chatapp.db.User
 import com.devwarex.chatapp.models.ChatModel
-import com.devwarex.chatapp.models.UserModel
 import com.devwarex.chatapp.repos.UserByIdRepo
 import com.devwarex.chatapp.util.Paths
 import com.google.firebase.auth.ktx.auth
@@ -31,7 +29,6 @@ class ChatsRepo @Inject constructor(
     init {
         job.launch {
             launch { database.getChats().collect { _uiState.value = _uiState.value.copy(isLoading = false, chats = it) } }
-            launch { userByIdRepo.user.receiveAsFlow().collect { saveUser(it) } }
         }
     }
 
@@ -70,6 +67,7 @@ class ChatsRepo @Inject constructor(
         job.launch {
             chat.ids.forEach {
                 if (it != uid && chat.id.isNotEmpty()) {
+                    userByIdRepo.getUserById(it)
                     database.insertChat(
                         Chat(
                             id = chat.id,
@@ -83,23 +81,6 @@ class ChatsRepo @Inject constructor(
             }
         }
     }
-
-    private fun saveUser(user: UserModel){
-        job.launch {
-            database.insertUser(
-                User(
-                    uid = user.uid,
-                    name = user.name,
-                    img = user.img,
-                    email = user.email,
-                    phone = user.phone,
-                    joinedAt = user.timestamp?.time ?: 0L
-                )
-            )
-        }
-
-    }
-
     fun removeListener(){
         if (chatListener != null) {
             chatListener?.remove()

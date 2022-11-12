@@ -15,6 +15,8 @@ data class Message(
     @NonNull @ColumnInfo(name = "sender_name") val name: String,
     @NonNull @ColumnInfo(name = "sender_id") val senderId: String,
     @NonNull @ColumnInfo(name = "timestamp") val timestamp: Long,
+    @ColumnInfo(name = "pin_lat") val pin_lat: Double,
+    @ColumnInfo(name = "pin_lng") val pin_lng: Double,
     @NonNull @ColumnInfo(name = "message_type") val type: MessageType,
     @NonNull @ColumnInfo(name = "message_state") var state: MessageState
 )

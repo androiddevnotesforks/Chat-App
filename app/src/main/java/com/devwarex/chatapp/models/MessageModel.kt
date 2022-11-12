@@ -13,6 +13,7 @@ class MessageModel(){
     var type: MessageType = MessageType.TEXT
     var chatId: String = ""
     var state: MessageState = MessageState.SENDING
+    var locationPin: LocationPin? = null
     @ServerTimestamp
     val timestamp: Date? = null
 
@@ -30,6 +31,22 @@ class MessageModel(){
         this.name = name
         this.chatId = chatId
         this.state = state
+    }
+
+    constructor(
+        type: MessageType = MessageType.PIN_LOCATION,
+        senderId: String,
+        name: String,
+        locationPin: LocationPin,
+        chatId: String,
+        state: MessageState
+    ): this() {
+        this.type = type
+        this.senderId = senderId
+        this.name = name
+        this.chatId = chatId
+        this.state = state
+        this.locationPin = locationPin
     }
 
 

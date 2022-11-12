@@ -36,6 +36,12 @@ import com.devwarex.chatapp.ui.profile.ProfileActivity
 import com.devwarex.chatapp.ui.theme.ChatAppTheme
 import com.devwarex.chatapp.util.BroadCastUtility
 import com.devwarex.chatapp.util.DateUtility
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.rememberCameraPositionState
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -176,7 +182,6 @@ fun ChatCard(
     chat: ChatRelations,
     viewModel: ChatsViewModel = hiltViewModel()
 ){
-
     Card(
         shape = MaterialTheme.shapes.medium,
         elevation = 4.dp,
@@ -196,6 +201,7 @@ fun ChatCard(
                 contentScale = ContentScale.Crop
             )
             val modifier: Modifier = Modifier
+
             Column(modifier = modifier){
                 Row(modifier = modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween) {
@@ -242,6 +248,7 @@ fun ChatCard(
                     )
                 }
             }
+
         }
     }
 }

@@ -39,7 +39,9 @@ class MessagesRepo @Inject constructor(
                                             name = message.name,
                                             type = message.type,
                                             chatId = message.chatId,
-                                            state = message.state
+                                            state = message.state,
+                                            pin_lat = message.locationPin?.lat ?: 0.0,
+                                            pin_lng = message.locationPin?.lng ?: 0.0
                                         )
                                     )
                                 }

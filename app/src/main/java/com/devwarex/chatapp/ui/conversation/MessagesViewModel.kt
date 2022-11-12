@@ -2,10 +2,12 @@ package com.devwarex.chatapp.ui.conversation
 
 
 import android.graphics.Bitmap
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.devwarex.chatapp.models.LocationPin
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -16,21 +18,21 @@ class MessagesViewModel @Inject constructor(
     private val repo: ConversationRepo
 ): ViewModel() {
 
-    private val _text = MutableStateFlow<String>("")
-    private val _uiState = MutableStateFlow<MessageUiState>(MessageUiState())
+    private val _text = MutableStateFlow("")
+    private val _uiState = MutableStateFlow(MessageUiState())
+    private val _locationUiState = MutableStateFlow(LocationUiState())
     val uiState: StateFlow<MessageUiState> get() = _uiState
+    val locationUiState: StateFlow<LocationUiState> = _locationUiState
     val text: StateFlow<String> get() = _text
     val shouldFetchChat: Flow<Boolean> get() = repo.shouldFetchChat.receiveAsFlow()
     private var isSent = false
     private val _insert = MutableLiveData<Boolean>()
-    private val _backState = MutableLiveData<BackButtonState>(BackButtonState())
-    val backState: LiveData<BackButtonState> get() = _backState
     val insert: LiveData<Boolean> get() = _insert
     val uploadProgress: StateFlow<Int> get() = repo.uploadProgress
     init {
         viewModelScope.launch {
             launch { repo.uiState.collect {
-                _uiState.value = it
+                _uiState.emit(it)
                 if (!it.isLoading && isSent){
                     _text.value = ""
                     isSent = false
@@ -38,6 +40,12 @@ class MessagesViewModel @Inject constructor(
             } }
 
             launch { text.collect { repo.setTypingState(it.isNotEmpty()) } }
+
+            launch {
+                locationUiState.collect{ location ->
+
+                }
+            }
         }
     }
     fun sync(chatId: String){
@@ -69,7 +77,6 @@ class MessagesViewModel @Inject constructor(
 
     fun setBitmap(bitmap: Bitmap){
         _uiState.value = _uiState.value.copy(bitmap = bitmap, previewBeforeSending = true)
-        _backState.value = _backState.value?.copy(isPreviewBeforeSending = true)
     }
 
     fun insertPhoto(){
@@ -81,18 +88,15 @@ class MessagesViewModel @Inject constructor(
     }
     fun onPreviewImage(img: String){
         _uiState.value = _uiState.value.copy(previewImage = img, isPreviewImage = true)
-        _backState.value = _backState.value?.copy(isImagePreview = true)
     }
 
     fun closePreviewImageForSending(){
         _uiState.value = _uiState.value.copy(previewBeforeSending = false, bitmap = null)
-        _backState.value = _backState.value?.copy(isPreviewBeforeSending = false)
         repo.zeroProgress()
     }
 
     fun closePreviewImage(){
         _uiState.value = _uiState.value.copy(previewImage = "", isPreviewImage = false)
-        _backState.value = _backState.value?.copy(isImagePreview = false)
     }
 
     fun sendImage(){
@@ -100,4 +104,66 @@ class MessagesViewModel @Inject constructor(
             repo.sendImage(_uiState.value.bitmap!!)
         }
     }
+
+    fun isLocationEnabled(b: Boolean) = viewModelScope.launch {
+        _locationUiState.emit(
+            value = _locationUiState.value.copy(isLocationEnabled = b)
+        )
+    }
+
+    fun isLocationPermissionGranted(b: Boolean) = viewModelScope.launch {
+        _locationUiState.emit(
+            value = _locationUiState.value.copy(isLocationPermissionGranted = b)
+        )
+    }
+
+    fun locationPermissionDenied() = viewModelScope.launch {
+        _locationUiState.emit(
+            value = _locationUiState.value.copy(
+                requestLastKnownLocation = false
+            )
+        )
+
+        _uiState.emit(
+            value = _uiState.value.copy(
+                requestLocation = false
+            )
+        )
+    }
+
+    fun pickLocation() = viewModelScope.launch {
+        _uiState.emit(
+            value = _uiState.value.copy(
+                requestLocation = true,
+                locationPermissionGranted = _locationUiState.value.isLocationPermissionGranted
+                        && _locationUiState.value.isLocationEnabled
+                )
+        )
+
+        _locationUiState.emit(
+            value = _locationUiState.value.copy(
+                requestLastKnownLocation = true
+            )
+        )
+    }
+
+    fun updateLocationPin(lat: Double,lng: Double) = viewModelScope.launch{
+        _uiState.emit(
+            value = _uiState.value.copy(locationPin = LocationPin(lat = lat,lng = lng))
+        )
+    }
+
+    fun shareCurrentLocation() = viewModelScope.launch {
+        dismissMapDialog()
+    }
+
+    fun dismissMapDialog() = viewModelScope.launch {
+        _uiState.emit(
+            value = _uiState.value.copy(requestLocation = false, locationPin = LocationPin())
+        )
+        _locationUiState.emit(
+            value = _locationUiState.value.copy(requestLastKnownLocation = false)
+        )
+    }
+
 }

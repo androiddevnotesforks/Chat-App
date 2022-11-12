@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import com.devwarex.chatapp.db.Chat
 import com.devwarex.chatapp.db.Message
 import com.devwarex.chatapp.db.User
+import com.devwarex.chatapp.models.LocationPin
 
 data class MessageUiState(
     val messages: List<Message> = listOf(),
@@ -17,5 +18,9 @@ data class MessageUiState(
     val previewBeforeSending: Boolean = false,
     val bitmap: Bitmap?= null,
     val isPreviewImage: Boolean = false,
-    val previewImage: String = ""
+    val previewImage: String = "",
+    val requestLocation:Boolean = false,
+    val locationPermissionGranted: Boolean = false,
+    val requestLocationPermission: Boolean = false,
+    val locationPin: LocationPin = LocationPin()
 )
