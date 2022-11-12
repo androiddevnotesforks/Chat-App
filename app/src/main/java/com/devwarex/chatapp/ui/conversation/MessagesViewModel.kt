@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.devwarex.chatapp.models.LocationPin
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -139,7 +140,6 @@ class MessagesViewModel @Inject constructor(
                         && _locationUiState.value.isLocationEnabled
                 )
         )
-
         _locationUiState.emit(
             value = _locationUiState.value.copy(
                 requestLastKnownLocation = true
@@ -154,6 +154,9 @@ class MessagesViewModel @Inject constructor(
     }
 
     fun shareCurrentLocation() = viewModelScope.launch {
+        val pin = _uiState.value.locationPin
+        repo.shareLocationPin(pin)
+        delay(100)
         dismissMapDialog()
     }
 

@@ -1,6 +1,7 @@
 package com.devwarex.chatapp.repos
 
 import com.devwarex.chatapp.db.AppDao
+import com.devwarex.chatapp.models.LocationPin
 import com.devwarex.chatapp.models.MessageModel
 import com.devwarex.chatapp.models.MessageNotificationModel
 import com.devwarex.chatapp.models.MessageNotifyDataModel
@@ -61,6 +62,43 @@ class SendMessageRepo @Inject constructor(
     }
 
 
+    fun shareLocationPin(
+        chatId: String,
+        uid: String,
+        pin: LocationPin,
+        name: String,
+        token: String,
+        availability: Boolean
+    ){
+        job.launch { isLoading.send(true) }
+        db.collection(Paths.MESSAGES)
+            .add(
+                MessageModel(
+                    senderId = uid,
+                    type = MessageType.PIN_LOCATION,
+                    locationPin = pin,
+                    name = name,
+                    chatId = chatId,
+                    state = MessageState.SENT
+                )
+            ).addOnCompleteListener { job.launch {
+                isLoading.send(!it.isSuccessful) }
+                updateLastMessage(chatId = chatId, lastMessage = "location_pin")
+                if (token.isNotEmpty() && !availability) {
+                    PushNotificationRepo.push(
+                        fcm = MessageNotificationModel(
+                            to = token,
+                            data = MessageNotifyDataModel(
+                                title = name,
+                                id = chatId,
+                                body = "Shared Location"
+                            )
+                        )
+                    )
+                }
+            }
+            .addOnFailureListener { job.launch { isLoading.send(false) } }
+    }
     fun sendImageMessage(
         chatId: String,
         uid: String,

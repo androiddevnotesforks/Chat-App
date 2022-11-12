@@ -230,15 +230,18 @@ fun ChatCard(
                     )
                 }
                 Row(modifier = modifier.padding(top = 2.dp, start = 8.dp)) {
-                    if (chat.chat.lastMessage == "IMAGE") {
+                    if (chat.chat.lastMessage == "IMAGE" || chat.chat.lastMessage == "location_pin") {
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_photo),
+                            painter = painterResource(id = if (chat.chat.lastMessage == "IMAGE" ) R.drawable.ic_photo else R.drawable.ic_location),
                             contentDescription ="photo label",
                             modifier = modifier.size(20.dp)
                         )
                     }
                     Text(
-                        text = if (chat.chat.lastMessage == "IMAGE") stringResource(id = R.string.photo_name) else chat.chat.lastMessage,
+                        text = if (chat.chat.lastMessage == "IMAGE"){ stringResource(id = R.string.photo_name)
+                        }else if(chat.chat.lastMessage == "location_pin"){
+                            "Shared Location"
+                        }else{ chat.chat.lastMessage },
                         style = MaterialTheme.typography.body2,
                         modifier = modifier
                             .align(Alignment.CenterVertically)

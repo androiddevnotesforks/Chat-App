@@ -137,7 +137,6 @@ class ConversationActivity : ComponentActivity() {
                         viewModel.pickLocation()
                         fusedLocationClient.requestLocationUpdates(createLocationRequest(),locationCallback,
                             Looper.getMainLooper())
-
                     }
                 }
             } }
@@ -511,7 +510,13 @@ fun ReceiveMessageCard(
                     )
                 }
                 MessageType.PIN_LOCATION ->{
-                    MapView(pin = LocationPin(lat = msg.pin_lat,msg.pin_lng), userName = viewModel.uiState.value.receiverUser?.name ?: "")
+                    MapView(
+                        pin = LocationPin(lat = msg.pin_lat,msg.pin_lng),
+                        userName = viewModel.uiState.value.receiverUser?.name ?: "",
+                        modifier = Modifier.fillMaxWidth()
+                            .height(200.dp)
+                            .padding(top = 6.dp, start = 6.dp, end = 6.dp)
+                    )
                 }
                 else -> { }
             }
@@ -589,7 +594,13 @@ fun SenderMessageCard(
                 }
 
                 MessageType.PIN_LOCATION -> {
-                    MapView(pin = LocationPin(lat = msg.pin_lat,msg.pin_lng), userName = "You")
+                    MapView(
+                        pin = LocationPin(lat = msg.pin_lat,msg.pin_lng),
+                        userName = "You",
+                        Modifier.fillMaxWidth()
+                            .height(200.dp)
+                            .padding(top = 6.dp, start = 6.dp, end = 6.dp)
+                    )
                 }
                 else -> { }
             }
@@ -628,17 +639,22 @@ fun SenderMessageCard(
 @Composable
 fun MapView(
     pin: LocationPin,
-    userName: String
+    userName: String,
+    modifier: Modifier
 ){
     val locationPin = LatLng(pin.lat, pin.lng)
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(locationPin, 17f)
+        position = CameraPosition.fromLatLngZoom(locationPin, 18f)
     }
     GoogleMap(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(max = 280.dp),
-        cameraPositionState = cameraPositionState
+        modifier = modifier
+            .fillMaxWidth().heightIn(max = 280.dp, min = 180.dp),
+        cameraPositionState = cameraPositionState,
+        uiSettings = MapUiSettings().copy(
+            zoomControlsEnabled = false,
+            zoomGesturesEnabled = false,
+            scrollGesturesEnabled = false
+        )
     ) {
         Marker(
             state = MarkerState(position = locationPin),

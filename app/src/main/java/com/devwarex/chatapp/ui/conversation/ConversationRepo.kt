@@ -3,6 +3,7 @@ package com.devwarex.chatapp.ui.conversation
 import android.graphics.Bitmap
 import com.devwarex.chatapp.db.AppDao
 import com.devwarex.chatapp.db.Message
+import com.devwarex.chatapp.models.LocationPin
 import com.devwarex.chatapp.models.UserModel
 import com.devwarex.chatapp.repos.SendMessageRepo
 import com.devwarex.chatapp.repos.UserByIdRepo
@@ -93,6 +94,17 @@ class ConversationRepo @Inject constructor(
 
     fun sendImage(bitmap: Bitmap){
         uploadImageRepo.upload(bitmap = bitmap)
+    }
+
+    fun shareLocationPin(pin: LocationPin){
+        sendMessageRepo.shareLocationPin(
+            uid = currentUser?.uid ?: "",
+            name = currentUser?.name ?: "",
+            pin = pin,
+            chatId = chatId,
+            token = token,
+            availability = _uiState.value.availability
+        )
     }
 
     fun zeroProgress(){

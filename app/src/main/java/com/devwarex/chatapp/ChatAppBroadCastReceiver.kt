@@ -46,6 +46,7 @@ class ChatAppBroadCastReceiver: BroadcastReceiver() {
             val title: String = payload["title"] ?: ""
             val body: String = payload["body"] ?: "test!"
             val id: String = payload["id"] ?: ""
+        if (title.isEmpty()) return
             var defaultIntent = Intent(context, ConversationActivity::class.java)
             defaultIntent.action = AccessibilityService.SERVICE_INTERFACE
             if (id.isNotEmpty() && id != currentChatId){
