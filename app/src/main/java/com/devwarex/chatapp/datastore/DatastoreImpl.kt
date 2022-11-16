@@ -30,4 +30,8 @@ class DatastoreImpl @Inject constructor(val context: Context){
 
     val contactsTimeout: Flow<Long> get() = context.datastore.data.map { it[REFRESH_CONTACTS_TIMEOUT_KEY] ?: 0L }
     suspend fun updateContactsTimeout(time: Long) = context.datastore.edit { it[REFRESH_CONTACTS_TIMEOUT_KEY] = time}
+
+    suspend fun clear(){
+        context.datastore.edit { clear() }
+    }
 }

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
@@ -24,7 +25,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.lifecycleScope
 import coil.compose.rememberAsyncImagePainter
+import com.devwarex.chatapp.ui.MainActivity
 import com.devwarex.chatapp.ui.theme.ChatAppTheme
+import com.devwarex.chatapp.util.Paths
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import java.io.FileNotFoundException
@@ -59,8 +64,23 @@ class ProfileActivity : ComponentActivity() {
                    pickPhoto()
                 }
             } }
+            launch {
+                viewModel.isSignedOut.collect{
+                    if (it){
+                        GoogleSignIn.getClient(this@ProfileActivity,getGSO()).signOut().addOnCompleteListener {  }
+                        startActivity(Intent(this@ProfileActivity,MainActivity::class.java))
+                        finish()
+                    }
+                }
+            }
         }
     }
+
+    private fun getGSO():GoogleSignInOptions = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(Paths.FIREBASE_CLIENT_ID)
+            .requestEmail()
+            .requestProfile()
+            .build()
 
     private fun pickPhoto(){
         pickPictureIntentLauncher.launch(galleryIntent)
@@ -111,7 +131,8 @@ fun ProfileScreen(
                     )
                 )}
             )
-        }
+        },
+        modifier = modifier.fillMaxSize()
     ) { padding ->
         modifier.padding(padding)
         val uiState: ProfileUiState = viewModel.uiState.collectAsState().value
@@ -191,6 +212,22 @@ fun ProfileScreen(
                     )
                 }
 
+                Spacer(modifier = modifier.padding(top = 16.dp))
+
+                Column(
+                    modifier = modifier.fillMaxSize().weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Bottom
+                ) {
+                    Button(
+                        onClick = { viewModel.signOut() },
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = MaterialTheme.colors.secondary
+                        )
+                    ) {
+                        Text(text = stringResource(id = resource.string.sign_out_title))
+                    }
+                }
 
                 Spacer(modifier = modifier.padding(top = 48.dp))
                 if(uiState.isNameUpdated){

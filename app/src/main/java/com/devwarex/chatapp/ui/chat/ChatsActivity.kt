@@ -2,6 +2,7 @@ package com.devwarex.chatapp.ui.chat
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -38,6 +39,8 @@ import com.devwarex.chatapp.util.BroadCastUtility
 import com.devwarex.chatapp.util.DateUtility
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
@@ -82,6 +85,13 @@ class ChatsActivity : ComponentActivity(){
         val intent = Intent(this,ContactsActivity::class.java)
         startActivity(intent)
         viewModel.removeToContactsObserver()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        if (Firebase.auth.currentUser == null){
+            finish()
+        }
     }
 
     override fun onPause() {

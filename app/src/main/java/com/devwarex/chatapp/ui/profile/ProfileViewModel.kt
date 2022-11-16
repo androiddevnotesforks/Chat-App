@@ -4,6 +4,8 @@ import android.graphics.Bitmap
 import androidx.core.text.isDigitsOnly
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,8 +19,11 @@ class ProfileViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(ProfileUiState())
     private val _insert = MutableStateFlow(false)
+    private val _isSignedOut = MutableStateFlow(false)
     val uiState: StateFlow<ProfileUiState> get() = _uiState
     val insert: StateFlow<Boolean> get() = _insert
+    val isSignedOut: StateFlow<Boolean> = _isSignedOut
+
     init {
         viewModelScope.launch {
             repo.uiState.collect{
@@ -51,4 +56,16 @@ class ProfileViewModel @Inject constructor(
     fun setBitmap(bitmap: Bitmap){
         repo.uploadProfilePic(bitmap)
     }
+
+    fun signOut(){
+        Firebase.auth.signOut()
+        viewModelScope.launch {
+            if (Firebase.auth.currentUser == null) {
+                _isSignedOut.emit(true)
+                //repo.deleteUserData()
+            }
+        }
+    }
+
+
 }

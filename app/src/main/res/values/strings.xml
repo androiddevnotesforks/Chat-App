@@ -55,5 +55,6 @@
     <string name="edit_profile_title">Edit Profile</string>
     <string name="save_title">Save</string>
     <string name="name_updated">Name updated</string>
+    <string name="sign_out_title">Sign out</string>
     <string name="share_app_body">Let\'s chat on ChatApp! \nGet it:\nhttps://play.google.com/store/apps/details?id=com.devwarex.chatapp</string>
 </resources>

@@ -36,4 +36,11 @@ interface AppDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertContact(contact: Contact)
+
+    @Query("delete from chat_messages_table")
+    suspend fun dropMessages()
+
+    @Query("delete from chat_table")
+    suspend fun dropChats()
+
 }

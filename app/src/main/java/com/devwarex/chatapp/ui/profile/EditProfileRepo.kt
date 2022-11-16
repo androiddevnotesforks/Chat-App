@@ -1,6 +1,7 @@
 package com.devwarex.chatapp.ui.profile
 
 import android.graphics.Bitmap
+import com.devwarex.chatapp.datastore.DatastoreImpl
 import com.devwarex.chatapp.db.AppDao
 import com.devwarex.chatapp.db.User
 import com.devwarex.chatapp.models.UserModel
@@ -10,6 +11,7 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.Source
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -18,7 +20,8 @@ import javax.inject.Inject
 
 class EditProfileRepo @Inject constructor(
     private val db: AppDao,
-    private val uploadImageRepo: UploadProfilePicRepo
+    private val uploadImageRepo: UploadProfilePicRepo,
+    private val datastoreImpl: DatastoreImpl
 ) {
 
     val uiState = MutableStateFlow(ProfileUiState())
@@ -89,5 +92,13 @@ class EditProfileRepo @Inject constructor(
                     }
                 }
             }
+    }
+
+
+    suspend fun deleteUserData(){
+        FirebaseMessaging.getInstance().deleteToken().addOnCompleteListener {  }
+        datastoreImpl.clear()
+        db.dropMessages()
+        db.dropChats()
     }
 }
