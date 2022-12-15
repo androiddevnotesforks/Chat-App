@@ -34,12 +34,15 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyChZm2qVTlhgooiqSQ74gzrU7nbHx97_0M" />
 
-        <receiver android:name=".ChatAppBroadCastReceiver"  android:exported="true">
+        <receiver
+            android:name=".ChatAppBroadCastReceiver"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
                 <action android:name="android.intent.action.INPUT_METHOD_CHANGED" />
                 <action android:name="android.intent.action.SEND"/>
                 <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="flag"/>
             </intent-filter>
         </receiver>
         <service

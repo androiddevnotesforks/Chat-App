@@ -33,7 +33,16 @@ class MessagesViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             launch { repo.uiState.collect {
-                _uiState.emit(it)
+                _uiState.emit(_uiState.value.copy(
+                    messages = it.messages,
+                    uid = it.uid,
+                    isLoading = it.isLoading,
+                    enable = it.enable,
+                    availability = it.availability,
+                    typing = it.typing,
+                    chat = it.chat,
+                    receiverUser = it.receiverUser
+                ))
                 if (!it.isLoading && isSent){
                     _text.value = ""
                     isSent = false
@@ -76,8 +85,10 @@ class MessagesViewModel @Inject constructor(
         repo.setAvailability(false)
     }
 
-    fun setBitmap(bitmap: Bitmap){
-        _uiState.value = _uiState.value.copy(bitmap = bitmap, previewBeforeSending = true)
+    fun setBitmap(
+        bitmap: Bitmap
+    ) = viewModelScope.launch {
+        _uiState.emit(_uiState.value.copy(bitmap = bitmap, previewBeforeSending = true))
     }
 
     fun insertPhoto(){
