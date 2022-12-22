@@ -1,11 +1,18 @@
 package com.devwarex.chatapp.ui.verify
 
+import android.app.Activity
+import android.content.ContentValues
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.telephony.TelephonyManager
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -14,6 +21,9 @@ import androidx.lifecycle.lifecycleScope
 import com.devwarex.chatapp.R
 import com.devwarex.chatapp.ui.chat.ChatsActivity
 import com.devwarex.chatapp.ui.theme.ChatAppTheme
+import com.devwarex.chatapp.util.NetworkUtil
+import com.google.android.gms.auth.api.identity.GetPhoneNumberHintIntentRequest
+import com.google.android.gms.auth.api.identity.Identity
 import com.google.firebase.FirebaseException
 import com.google.firebase.FirebaseTooManyRequestsException
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
@@ -34,6 +44,7 @@ class VerifyActivity : ComponentActivity() {
     private lateinit var resendToken: PhoneAuthProvider.ForceResendingToken
     private lateinit var mCredential: PhoneAuthCredential
     private lateinit var options: PhoneAuthOptions.Builder
+    private lateinit var phoneNumberHintIntentResultLauncher: ActivityResultLauncher<IntentSenderRequest>
     private val viewModel by viewModels<VerifyViewModel>()
 
     private val callbacks = object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
@@ -90,11 +101,22 @@ class VerifyActivity : ComponentActivity() {
                 }
             }
         }
-        viewModel.getCountries()
+        phoneNumberHintIntentResultLauncher = preparePhoneHintLauncher()
+        val phone =getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+        if (NetworkUtil.isMobileConnectedToInternet(this)){
+            var code: String? = phone.simCountryIso
+            code = code ?: phone.networkCountryIso
+            viewModel.getCountries()
+            viewModel.getCountryCode(code ?: "eg")
+        }else{
+            Toast.makeText(this,getString(R.string.offline_message),Toast.LENGTH_LONG).show()
+        }
         options = PhoneAuthOptions.newBuilder(Firebase.auth)
             .setTimeout(60L, TimeUnit.SECONDS) // Timeout and unit
             .setActivity(this)                 // Activity (for callback binding)
             .setCallbacks(callbacks)          // OnVerificationStateChangedCallbacks
+
+        requestPhoneNumberHint()
 
         lifecycleScope.launchWhenCreated {
             launch {
@@ -105,7 +127,6 @@ class VerifyActivity : ComponentActivity() {
 
                     if (it.verifying){
                         viewModel.codeNumber.observe(this@VerifyActivity){ code ->
-                            Log.e("code",code)
                             verifyWithCredential(code = code)
                             viewModel.codeNumber.removeObservers(this@VerifyActivity)
                         }
@@ -136,15 +157,61 @@ class VerifyActivity : ComponentActivity() {
                 when(it.message){
                     WRONG_CODE_MESSAGE -> {
                         viewModel.onWrongCode()
-                        Toast.makeText(this, getString(R.string.wrong_code),Toast.LENGTH_LONG).show()
+                        Toast.makeText(
+                            this,
+                            getString(R.string.wrong_code),
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
                     PHONE_LINKED_TO_ANOTHER_EMAIL_MESSAGE -> {
                         viewModel.onPhoneIsWrong()
-                        Toast.makeText(this, getString(R.string.wrong_phone_message),Toast.LENGTH_LONG).show()
+                        Toast.makeText(
+                            this,
+                            getString(R.string.wrong_phone_message),
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
                     ALREADY_LINKED -> signIn()
                     else ->  Log.e("link","account: ${it.message}")
                 }
+            }
+    }
+
+    private fun preparePhoneHintLauncher(): ActivityResultLauncher<IntentSenderRequest> {
+        return registerForActivityResult(
+            ActivityResultContracts.StartIntentSenderForResult()
+        ){ result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                try {
+                    val phoneNumber = Identity.getSignInClient(this)
+                        .getPhoneNumberFromIntent(result.data)
+                    println("phoneNumber $phoneNumber")
+                    viewModel.setHintPhone(phoneNumber)
+                } catch (e: Exception) {
+                    println("Phone Number Hint failed")
+                    e.printStackTrace()
+                }
+            }else{
+                Log.e("phone","cancelled")
+            }
+        }
+    }
+
+    private fun requestPhoneNumberHint(){
+        val request: GetPhoneNumberHintIntentRequest =
+            GetPhoneNumberHintIntentRequest.builder().build()
+        Identity.getSignInClient(this)
+            .getPhoneNumberHintIntent(request)
+            .addOnSuccessListener {
+                try {
+                    phoneNumberHintIntentResultLauncher.launch(IntentSenderRequest.Builder(
+                        it.intentSender
+                    ).build())
+                } catch(e: Exception) {
+                    Log.e(ContentValues.TAG, "Launching the PendingIntent failed")
+                }
+            }.addOnFailureListener {
+                Log.e(ContentValues.TAG, "${it.message}")
             }
     }
 

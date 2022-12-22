@@ -9,5 +9,6 @@ data class VerifyUiState(
     val success: Boolean = false,
     val drop: Boolean = false,
     val selectedCountry: CountryModel? = null,
-    val phone: String = ""
+    val phone: String = "",
+    val hintPhone: String = ""
 )

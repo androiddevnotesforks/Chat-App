@@ -22,6 +22,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.loader.app.LoaderManager
 import androidx.loader.content.CursorLoader
 import androidx.loader.content.Loader
+import com.devwarex.chatapp.BuildConfig
 import com.devwarex.chatapp.db.Contact
 import com.devwarex.chatapp.ui.conversation.ConversationActivity
 import com.devwarex.chatapp.R as resource

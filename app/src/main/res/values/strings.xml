@@ -33,7 +33,7 @@
     <string name="or_title">OR</string>
     <string name="google_sign_in_title">Sign in with Google</string>
     <string name="verify_its_you">Verify it\'s you</string>
-    <string name="verify_message">ChatApp will send an SMS message to verify your number.</string>
+    <string name="verify_message">ChatApp will send a SMS message to verify your number.</string>
     <string name="phone_title">Phone number</string>
     <string name="code_title">Code</string>
     <string name="verification_code">Verification code</string>
@@ -57,4 +57,6 @@
     <string name="name_updated">Name updated</string>
     <string name="sign_out_title">Sign out</string>
     <string name="share_app_body">Let\'s chat on ChatApp! \nGet it:\nhttps://play.google.com/store/apps/details?id=com.devwarex.chatapp</string>
+    <string name="offline_message">You\'r Offline</string>
+
 </resources>
