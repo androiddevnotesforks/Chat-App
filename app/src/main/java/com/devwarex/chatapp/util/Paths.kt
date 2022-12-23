@@ -14,5 +14,8 @@ class Paths {
         const val FCM_URL = "https://fcm.googleapis.com/"
         const val REST_COUNTRIES_URL = "https://restcountries.com/"
 
+        const val AVAILABILITY = "availability"
+        const val TYPING = "typing"
+
     }
 }

@@ -11,8 +11,15 @@ class PushNotificationRepo {
 
     companion object{
         fun push(fcm: MessageNotificationModel) =  CoroutineScope(Dispatchers.Main).launch {
-            val response = NotificationClient.create().pushNotification(fcm)
-            Log.d("push_notfication","success: ${response.isSuccessful},sent: ${response.body()?.success}")
+            try {
+                val response = NotificationClient.create().pushNotification(fcm)
+                Log.d(
+                    "push_notification",
+                    "success: ${response.isSuccessful},sent: ${response.body()?.success}"
+                )
+            }catch (e: Exception){
+                Log.e("notification",e.message.toString())
+            }
         }
 
     }

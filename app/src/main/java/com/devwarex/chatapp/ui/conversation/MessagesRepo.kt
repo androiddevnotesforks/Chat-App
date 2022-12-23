@@ -16,15 +16,15 @@ import javax.inject.Inject
 class MessagesRepo @Inject constructor(
     private val database: AppDao
 ) {
-    private var messagesListener: ListenerRegistration? = null
-    private val job = CoroutineScope(Dispatchers.Unconfined)
+    private lateinit var messagesListener: ListenerRegistration
+    private val coroutine = CoroutineScope(Dispatchers.Unconfined)
 
     fun sync(chatId: String){
         messagesListener = Firebase.firestore.collection(Paths.MESSAGES)
             .whereEqualTo("chatId",chatId)
             .addSnapshotListener { task, error ->
                 if (task != null) {
-                    job.launch {
+                    coroutine.launch {
                         for (document in task.documents) {
                             val message = document.toObject(MessageModel::class.java)
                             if (message != null) {
@@ -55,9 +55,9 @@ class MessagesRepo @Inject constructor(
 
 
     fun removeListener(){
-        if (messagesListener !=  null){
-            messagesListener?.remove()
-            job.cancel()
+        if (this::messagesListener.isInitialized){
+            messagesListener.remove()
+            coroutine.cancel()
         }
     }
 }

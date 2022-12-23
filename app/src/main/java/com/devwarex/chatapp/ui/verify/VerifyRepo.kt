@@ -45,7 +45,7 @@ class VerifyRepo @Inject constructor(
 
     fun verifyAccount(phone: String) = userRepo.verifyAccount(phone)
 
-    fun cancelcoroutine(){
+    fun cancelCoroutine(){
         coroutine.cancel()
     }
 }

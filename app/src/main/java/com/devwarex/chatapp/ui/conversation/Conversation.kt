@@ -1,6 +1,7 @@
 package com.devwarex.chatapp.ui.conversation
 
 import android.graphics.Bitmap
+import android.util.Log
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -48,6 +49,7 @@ fun MainLayoutScreen(
     viewModel: MessagesViewModel = hiltViewModel()
 ){
     val uiState = viewModel.uiState.collectAsState().value
+    Log.e("ui",uiState.enable.toString())
     Scaffold(
         topBar = {
             Box(
@@ -106,8 +108,6 @@ fun MainLayoutScreen(
                     }
                 }
             }
-
-            val text = viewModel.text.collectAsState()
             Row(modifier = modifier
                 .constrainAs(edit) {
                     end.linkTo(parent.end)
@@ -116,8 +116,8 @@ fun MainLayoutScreen(
                 }
                 .fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween) {
-                MessageEditText(modifier.weight(1f), viewModel = viewModel, text = text.value)
-                if (text.value.isNotBlank()) {
+                MessageEditText(modifier.weight(1f), viewModel = viewModel, text = uiState.text)
+                if (uiState.text.isNotBlank()) {
                     FloatingActionButton(
                         onClick = { if (uiState.enable) viewModel.send() },
                         modifier = modifier
@@ -402,7 +402,7 @@ fun MapView(
 ){
     val locationPin = LatLng(pin.lat, pin.lng)
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(locationPin, 18f)
+        position = CameraPosition.fromLatLngZoom(locationPin, 16f)
     }
     GoogleMap(
         modifier = modifier
@@ -518,7 +518,7 @@ fun MapDialog(
     ) {
         val currentLocation = LatLng(locationPin.lat, locationPin.lng)
         val cameraPositionState = rememberCameraPositionState {
-            position = CameraPosition.fromLatLngZoom(currentLocation, 17f)
+            position = CameraPosition.fromLatLngZoom(currentLocation, 16f)
         }
         Column(
             modifier = Modifier

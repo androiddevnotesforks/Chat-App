@@ -22,5 +22,6 @@ data class MessageUiState(
     val requestLocation:Boolean = false,
     val locationPermissionGranted: Boolean = false,
     val requestLocationPermission: Boolean = false,
+    val text: String = "",
     val locationPin: LocationPin = LocationPin()
 )

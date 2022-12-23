@@ -146,7 +146,7 @@ class VerifyViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-        repo.cancelcoroutine()
+        repo.cancelCoroutine()
     }
 
 }

@@ -23,7 +23,9 @@ import androidx.compose.material.*
 import androidx.compose.ui.Modifier
 import com.devwarex.chatapp.ui.theme.ChatAppTheme
 import androidx.core.app.ActivityCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.devwarex.chatapp.ui.chat.ChatsActivity
 import com.devwarex.chatapp.util.BroadCastUtility
 import com.devwarex.chatapp.util.BroadCastUtility.Companion.CHAT_ID
@@ -58,9 +60,10 @@ class ConversationActivity : ComponentActivity() {
             permissions.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false) -> {
                 // Only approximate location access granted.
 
-            } else -> {
-            // No location access granted.
-            viewModel.locationPermissionDenied()
+            }
+            else -> {
+                // No location access granted.
+                viewModel.locationPermissionDenied()
             }
         }
     }
@@ -77,39 +80,58 @@ class ConversationActivity : ComponentActivity() {
         }
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         viewModel.isLocationPermissionGranted(
-            ActivityCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION) ==
-                    PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+            ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) ==
+                    PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
         )
-        galleryIntent = Intent(Intent.ACTION_PICK).apply { type = "image/*"  }
+        galleryIntent = Intent(Intent.ACTION_PICK).apply { type = "image/*" }
         pickPictureLauncher()
-        lifecycleScope.launchWhenCreated {
-            launch { viewModel.shouldFetchChat.collect { if (it) returnToChat() } }
-            launch { viewModel.locationUiState.collect{
-                Log.e("location_state",Gson().toJson(it))
-                if (it.requestLastKnownLocation){
-                    if (!it.isLocationEnabled){
-                        requestEnableLocation()
-                    }
-                    if (it.isLocationEnabled && !it.isLocationPermissionGranted){
-                        requestPermissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION))
-                        viewModel.pickLocation()
-                    }
-                    if (it.isLocationEnabled && it.isLocationPermissionGranted){
-                        updateLocation()
-                        viewModel.pickLocation()
-                        fusedLocationClient.requestLocationUpdates(createLocationRequest(),locationCallback,
-                            Looper.getMainLooper())
+        lifecycleScope.launch {
+            lifecycle.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                launch { viewModel.shouldFetchChat.collect { if (it) returnToChat() } }
+                launch {
+                    viewModel.locationUiState.collect {
+                        Log.e("location_state", Gson().toJson(it))
+                        if (it.requestLastKnownLocation) {
+                            if (!it.isLocationEnabled) {
+                                requestEnableLocation()
+                            }
+                            if (it.isLocationEnabled && !it.isLocationPermissionGranted) {
+                                requestPermissionLauncher.launch(
+                                    arrayOf(
+                                        Manifest.permission.ACCESS_FINE_LOCATION,
+                                        Manifest.permission.ACCESS_COARSE_LOCATION
+                                    )
+                                )
+                                viewModel.pickLocation()
+                            }
+                            if (it.isLocationEnabled && it.isLocationPermissionGranted) {
+                                updateLocation()
+                                viewModel.pickLocation()
+                                if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
+                                    == PackageManager.PERMISSION_GRANTED &&
+                                    checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+                                    == PackageManager.PERMISSION_GRANTED
+                                ) {
+                                    fusedLocationClient.requestLocationUpdates(
+                                        createLocationRequest(), locationCallback,
+                                        Looper.getMainLooper()
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
-            } }
+            }
         }
 
-        viewModel.insert.observe(this,this::insertPhoto)
+        viewModel.insert.observe(this, this::insertPhoto)
 
-        val callback = object :OnBackPressedCallback(true){
+        val callback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-               returnToChat()
+                returnToChat()
             }
         }
         onBackPressedDispatcher.addCallback(
@@ -118,8 +140,10 @@ class ConversationActivity : ComponentActivity() {
         )
     }
 
-    private fun insertPhoto(b: Boolean){
-        if (b){ pickPhoto() }
+    private fun insertPhoto(b: Boolean) {
+        if (b) {
+            pickPhoto()
+        }
     }
 
     private fun createLocationRequest(): LocationRequest = LocationRequest.create().apply {
@@ -129,19 +153,20 @@ class ConversationActivity : ComponentActivity() {
     }
 
 
-    private fun requestEnableLocation(){
+    private fun requestEnableLocation() {
         val locationBuilder = LocationSettingsRequest.Builder()
             .addLocationRequest(createLocationRequest())
         val settingsClient = LocationServices.getSettingsClient(this)
-        val task: Task<LocationSettingsResponse> = settingsClient.checkLocationSettings(locationBuilder.build())
+        val task: Task<LocationSettingsResponse> =
+            settingsClient.checkLocationSettings(locationBuilder.build())
         task.addOnSuccessListener {
         }
         task.addOnFailureListener {
-            if (it is ResolvableApiException){
+            if (it is ResolvableApiException) {
                 try {
-                    it.startResolutionForResult(this,500)
+                    it.startResolutionForResult(this, 500)
                 } catch (sendEx: IntentSender.SendIntentException) {
-                    Log.e("enable_location",sendEx.message.toString())
+                    Log.e("enable_location", sendEx.message.toString())
                 }
             }
         }
@@ -149,7 +174,7 @@ class ConversationActivity : ComponentActivity() {
     }
 
 
-    private fun pickPhoto(){
+    private fun pickPhoto() {
         pickPictureIntentLauncher.launch(galleryIntent)
     }
 
@@ -176,6 +201,7 @@ class ConversationActivity : ComponentActivity() {
             }
         }
     }
+
     override fun onResume() {
         super.onResume()
         chatId = intent.getStringExtra(CHAT_ID) ?: ""
@@ -187,26 +213,27 @@ class ConversationActivity : ComponentActivity() {
         }
         val manager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         viewModel.isLocationEnabled(manager.isProviderEnabled(LocationManager.GPS_PROVIDER))
+        viewModel.available()
     }
 
-    private fun stopUpdateLocation(){
+    private fun stopUpdateLocation() {
         if (this::locationCallback.isInitialized) {
             fusedLocationClient.removeLocationUpdates(locationCallback)
         }
     }
 
-    private fun updateLocation(){
+    private fun updateLocation() {
         var counter = 0
-        locationCallback = object : LocationCallback(){
+        locationCallback = object : LocationCallback() {
             override fun onLocationResult(p0: LocationResult) {
                 super.onLocationResult(p0)
-                for (location in p0.locations){
-                    Log.e("counter","$counter")
+                for (location in p0.locations) {
+                    Log.e("counter", "$counter")
                     viewModel.updateLocationPin(
                         location.latitude,
                         location.longitude
                     )
-                    if(counter == 2){
+                    if (counter == 2) {
                         stopUpdateLocation()
                         break
                     }
@@ -215,6 +242,7 @@ class ConversationActivity : ComponentActivity() {
             }
         }
     }
+
     override fun onStop() {
         super.onStop()
         Intent().also { intent ->
@@ -231,12 +259,12 @@ class ConversationActivity : ComponentActivity() {
         viewModel.removeListener()
     }
 
-    private fun returnToChat(){
-        if (isTaskRoot){
-            val intent = Intent(this,ChatsActivity::class.java)
+    private fun returnToChat() {
+        if (isTaskRoot) {
+            val intent = Intent(this, ChatsActivity::class.java)
             startActivity(intent)
             finish()
-        }else{
+        } else {
             finish()
         }
         lifecycleScope.cancel()
