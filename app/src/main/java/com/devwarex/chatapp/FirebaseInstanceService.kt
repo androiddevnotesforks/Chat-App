@@ -1,5 +1,6 @@
 package com.devwarex.chatapp
 
+import android.Manifest
 import android.accessibilityservice.AccessibilityService
 import android.app.ActivityManager
 import android.app.NotificationChannel
@@ -7,6 +8,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Build
@@ -64,7 +66,7 @@ class FirebaseInstanceService : FirebaseMessagingService() {
         val defaultPendingIntent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             PendingIntent.getActivity(
                 this, 0,
-                defaultIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_MUTABLE
+                defaultIntent, PendingIntent.FLAG_MUTABLE
             )
         } else {
             PendingIntent.getActivity(
@@ -94,17 +96,19 @@ class FirebaseInstanceService : FirebaseMessagingService() {
             .setContentTitle(title)
             .setContentText(body)
             .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setCategory(NotificationCompat.CATEGORY_CALL)
+            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setContentIntent(defaultPendingIntent)
             .setAutoCancel(true)
         if (bitmap != null) {
             builder.setLargeIcon(bitmap)
         }
-
-        with(NotificationManagerCompat.from(this)) {
-            // notificationId is a unique int for each notification that you must define
-            notify(7001, builder.build())
+        if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+            == PackageManager.PERMISSION_GRANTED) {
+            with(NotificationManagerCompat.from(this)) {
+                // notificationId is a unique int for each notification that you must define
+                notify(7001, builder.build())
+            }
         }
 
     }

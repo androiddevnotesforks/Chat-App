@@ -60,7 +60,7 @@ class ChatAppBroadCastReceiver : BroadcastReceiver() {
         val defaultPendingIntent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             PendingIntent.getActivity(
                 context, 0,
-                defaultIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_MUTABLE
+                defaultIntent, PendingIntent.FLAG_MUTABLE
             )
         } else {
             PendingIntent.getActivity(
@@ -91,7 +91,7 @@ class ChatAppBroadCastReceiver : BroadcastReceiver() {
             .setContentTitle(title)
             .setContentText(body)
             .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setCategory(NotificationCompat.CATEGORY_CALL)
+            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setContentIntent(defaultPendingIntent)
             .setAutoCancel(true)
