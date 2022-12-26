@@ -159,4 +159,24 @@ class MessagesViewModel @Inject constructor(
         )
     }
 
+    fun onDeleteMessage(
+        messageId: String
+    ) = viewModelScope.launch {
+        repo.uiState.emit(
+            value = repo.uiState.value.copy(
+                deleteMessageId = messageId
+            )
+        )
+    }
+
+    fun deleteMessage() = repo.deleteMessage()
+
+    fun onDismissDeleteMessage() = viewModelScope.launch {
+        repo.uiState.emit(
+            value = repo.uiState.value.copy(
+                deleteMessageId = ""
+            )
+        )
+    }
+
 }

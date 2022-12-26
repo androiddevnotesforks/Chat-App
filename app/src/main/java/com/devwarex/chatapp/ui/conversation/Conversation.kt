@@ -1,7 +1,6 @@
 package com.devwarex.chatapp.ui.conversation
 
 import android.graphics.Bitmap
-import android.util.Log
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -46,7 +45,6 @@ fun MainLayoutScreen(
     modifier: Modifier = Modifier,
     viewModel: MessagesViewModel = hiltViewModel()
 ) {
-    val uiState = viewModel.uiState.collectAsState().value
     Scaffold(
         topBar = {
             Box(
@@ -55,6 +53,7 @@ fun MainLayoutScreen(
                     .requiredHeight(56.dp)
                     .background(MaterialTheme.colors.primarySurface),
             ) {
+                val uiState = viewModel.uiState.collectAsState().value
                 Row(
                     modifier = Modifier
                         .align(Alignment.CenterStart)
@@ -90,6 +89,7 @@ fun MainLayoutScreen(
         }
     ) { padding ->
         modifier.padding(padding)
+        val uiState = viewModel.uiState.collectAsState().value
         ConstraintLayout {
             val (list, edit) = createRefs()
             LazyColumn(
@@ -103,9 +103,14 @@ fun MainLayoutScreen(
                     .fillMaxWidth(),
                 reverseLayout = true
             ) {
+
                 if (uiState.uid.isNotEmpty()) {
                     items(uiState.messages) {
-                        MainMessageCard(msg = it, uid = uiState.uid, viewModel = viewModel)
+                        MainMessageCard(
+                            msg = it,
+                            uid = uiState.uid,
+                            viewModel = viewModel
+                        )
                     }
                 }
             }
@@ -147,20 +152,29 @@ fun MainLayoutScreen(
             }
 
         }
-        if (uiState.previewBeforeSending && uiState.bitmap != null) {
-            PreviewImageForSending(
-                bitmap = uiState.bitmap,
-                viewModel = viewModel,
-                modifier = modifier
-            )
-        }
-        if (uiState.isPreviewImage && uiState.previewImage.isNotEmpty()) {
-            ImageMessageView(
-                img = uiState.previewImage,
-                viewModel = viewModel,
-                modifier = modifier
-            )
-        }
+    }
+    val uiState = viewModel.uiState.collectAsState().value
+    if (uiState.previewBeforeSending && uiState.bitmap != null) {
+        PreviewImageForSending(
+            bitmap = uiState.bitmap,
+            viewModel = viewModel,
+            modifier = modifier
+        )
+    }
+
+    if (uiState.isPreviewImage && uiState.previewImage.isNotEmpty()) {
+        ImageMessageView(
+            img = uiState.previewImage,
+            viewModel = viewModel,
+            modifier = modifier
+        )
+    }
+
+    if (uiState.deleteMessageId.isNotEmpty()) {
+        DeleteMessageDialog(
+            viewModel = viewModel,
+            modifier = modifier
+        )
     }
 
     if (uiState.requestLocation && uiState.locationPermissionGranted) {
@@ -174,7 +188,11 @@ fun MainLayoutScreen(
 }
 
 @Composable
-fun MessageEditText(modifier: Modifier, text: String, viewModel: MessagesViewModel) {
+fun MessageEditText(
+    modifier: Modifier,
+    text: String,
+    viewModel: MessagesViewModel
+) {
     TextField(
         value = text,
         onValueChange = viewModel::setText,
@@ -210,7 +228,11 @@ fun MessageEditText(modifier: Modifier, text: String, viewModel: MessagesViewMod
 }
 
 @Composable
-fun MainMessageCard(msg: Message, uid: String, viewModel: MessagesViewModel) {
+fun MainMessageCard(
+    msg: Message,
+    uid: String,
+    viewModel: MessagesViewModel
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -323,14 +345,16 @@ fun SenderMessageCard(
     modifier: Modifier,
     viewModel: MessagesViewModel
 ) {
-    Column(modifier = modifier
-        .fillMaxWidth()
-        .combinedClickable(
-            enabled = true,
-            onLongClick = { Log.e("long_click","${msg.id}") },
-            onClick = { },
-            onClickLabel = "Delete"
-        )) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                enabled = true,
+                onLongClick = { viewModel.onDeleteMessage(msg.id) },
+                onClick = { },
+                onClickLabel = "Delete"
+            )
+    ) {
         Card(
             shape = MaterialTheme.shapes.medium.copy(
                 bottomStart = CornerSize(6.dp),
@@ -339,7 +363,8 @@ fun SenderMessageCard(
                 topStart = CornerSize(6.dp)
             ),
             elevation = 2.dp,
-            modifier = modifier.padding(end = 2.dp, start = 32.dp)
+            modifier = modifier
+                .padding(end = 2.dp, start = 32.dp)
                 .align(Alignment.Start),
             backgroundColor = LightBlue
         ) {
@@ -527,6 +552,46 @@ fun PreviewImageForSending(
     )
 }
 
+@Composable
+fun DeleteMessageDialog(
+    viewModel: MessagesViewModel,
+    modifier: Modifier
+) {
+    AlertDialog(
+        onDismissRequest = { viewModel.onDismissDeleteMessage() },
+        text = {
+            Column {
+                Text(
+                    text = "Delete message?",
+                    style = MaterialTheme.typography.h6
+                )
+                Spacer(modifier = modifier.padding(top = 16.dp))
+                Text(
+                    text = "This message will be delete for everyone.",
+                    style = MaterialTheme.typography.body1
+                )
+            }
+        },
+        buttons = {
+            Row(
+                horizontalArrangement = Arrangement.End,
+                modifier = modifier.fillMaxWidth().padding(
+                    start = 16.dp,
+                    end = 16.dp,
+                    bottom = 16.dp
+                )
+            ) {
+                TextButton(onClick = { viewModel.onDismissDeleteMessage() }) {
+                    Text(text = "Cancel")
+                }
+                Spacer(modifier = modifier.padding(16.dp))
+                Button(onClick = { viewModel.deleteMessage() }) {
+                    Text(text = "Delete")
+                }
+            }
+        }
+    )
+}
 
 @Composable
 fun MapDialog(

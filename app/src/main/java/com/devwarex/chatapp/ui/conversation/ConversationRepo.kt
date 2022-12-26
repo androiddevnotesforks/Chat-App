@@ -115,6 +115,17 @@ class ConversationRepo @Inject constructor(
                     }
                 }
             }
+
+            launch { sendMessageRepo.isDeleted.collect{
+                if (it){
+                    val messageId = uiState.value.deleteMessageId
+                    database.deleteMessage(messageId)
+                    delay(200)
+                    uiState.emit(
+                        value = uiState.value.copy(deleteMessageId = "")
+                    )
+                }
+            } }
         }
     }
 
@@ -158,6 +169,11 @@ class ConversationRepo @Inject constructor(
                 }
             }
         }
+    }
+
+    fun deleteMessage() = coroutine.launch {
+        val messageId = uiState.value.deleteMessageId
+        sendMessageRepo.deleteMessage(messageId)
     }
 
     private val availabilityListener = object : ValueEventListener {

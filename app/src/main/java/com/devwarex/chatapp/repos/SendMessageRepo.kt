@@ -1,6 +1,5 @@
 package com.devwarex.chatapp.repos
 
-import com.devwarex.chatapp.db.AppDao
 import com.devwarex.chatapp.models.LocationPin
 import com.devwarex.chatapp.models.MessageModel
 import com.devwarex.chatapp.models.notification.MessageNotificationModel
@@ -14,15 +13,17 @@ import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-class SendMessageRepo @Inject constructor(
-    private val database: AppDao
-) {
+class SendMessageRepo @Inject constructor() {
     private val db = Firebase.firestore
     val isLoading = Channel<Boolean>()
+    val isDeleted = MutableStateFlow(false)
     private val job = CoroutineScope(Dispatchers.Unconfined)
+
     fun sendTextMessage(
         chatId: String,
         uid: String,
@@ -57,8 +58,7 @@ class SendMessageRepo @Inject constructor(
                         )
                     )
                 }
-            }
-            .addOnFailureListener { job.launch { isLoading.send(false) } }
+            }.addOnFailureListener { job.launch { isLoading.send(false) } }
     }
 
 
@@ -150,5 +150,17 @@ class SendMessageRepo @Inject constructor(
                 "lastMessage",lastMessage,
                 "lastEdit",FieldValue.serverTimestamp()
             ).addOnCompleteListener {  }
+    }
+
+    fun deleteMessage(messageId: String){
+        db.collection(Paths.MESSAGES)
+            .document(messageId)
+            .delete().addOnSuccessListener {
+                job.launch {
+                    isDeleted.emit(true)
+                    delay(200)
+                    isDeleted.value = false
+                }
+            }
     }
 }
