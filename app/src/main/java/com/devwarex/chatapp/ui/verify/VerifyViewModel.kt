@@ -5,7 +5,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.devwarex.chatapp.models.CountryModel
+import com.devwarex.chatapp.models.country.CountryModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -69,16 +69,24 @@ class VerifyViewModel @Inject constructor(
     private fun filterHintPhone() = viewModelScope.launch {
         val p = _uiState.value.hintPhone
         val c = _uiState.value.selectedCountry
-        if (p.isNotEmpty() && c !== null){
+        if (p.isNotEmpty() && c !== null) {
             setPhone(
-               s = p.replace(if(c.idd == null) "" else c.idd.root + if (c.idd.suffixes.isNullOrEmpty()) "" else c.idd.suffixes[0],"")
+                s = p.replace(
+                    if (c.idd == null) "" else c.idd.root + if (c.idd.suffixes.isNullOrEmpty()) ""
+                    else c.idd.suffixes[0], ""
+                )
             )
         }
     }
 
-    fun onCountrySelect(country: CountryModel) = viewModelScope.launch {
+    fun onCountrySelect(
+        country: CountryModel
+    ) = viewModelScope.launch {
         _uiState.emit(
-            value = _uiState.value.copy(drop = false, selectedCountry = country)
+            value = _uiState.value.copy(
+                drop = false,
+                selectedCountry = country
+            )
         )
     }
 
@@ -88,19 +96,27 @@ class VerifyViewModel @Inject constructor(
         repo.getCountryByCode(country)
     }
 
-    fun setCode(s: String)  =viewModelScope.launch {
+    fun setCode(s: String) = viewModelScope.launch {
         if (s.length in 0..6) {
             _code.emit(s)
         }
     }
 
-    fun onCodeSent() {
-        _uiState.value = _uiState.value.copy(sent = true, requestingCode = false, verifying = false)
+    fun onCodeSent() = viewModelScope.launch {
+        _uiState.emit(
+            value = _uiState.value.copy(
+                sent = true,
+                requestingCode = false,
+                verifying = false
+            )
+        )
     }
 
-    fun onRequestCode() {
-        if (_uiState.value.phone.length > 7) {
-            _uiState.value = _uiState.value.copy(requestingCode = true)
+    fun onRequestCode() = viewModelScope.launch {
+        if (_uiState.value.phone.length > 7 || _uiState.value.hintPhone.isNotEmpty()) {
+            _uiState.emit(
+                value = _uiState.value.copy(requestingCode = true)
+            )
         }
     }
 
@@ -133,12 +149,14 @@ class VerifyViewModel @Inject constructor(
         _codeNumber.value = ""
     }
 
-    fun onWrongCode() {
-        _uiState.value = _uiState.value.copy(
-            sent = true,
-            requestingCode = false,
-            verifying = false,
-            success = false
+    fun onWrongCode() = viewModelScope.launch {
+        _uiState.emit(
+            value = _uiState.value.copy(
+                sent = true,
+                requestingCode = false,
+                verifying = false,
+                success = false
+            )
         )
         _code.value = ""
         _codeNumber.value = ""

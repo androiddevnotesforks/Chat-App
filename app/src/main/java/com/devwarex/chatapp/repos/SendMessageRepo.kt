@@ -3,8 +3,8 @@ package com.devwarex.chatapp.repos
 import com.devwarex.chatapp.db.AppDao
 import com.devwarex.chatapp.models.LocationPin
 import com.devwarex.chatapp.models.MessageModel
-import com.devwarex.chatapp.models.MessageNotificationModel
-import com.devwarex.chatapp.models.MessageNotifyDataModel
+import com.devwarex.chatapp.models.notification.MessageNotificationModel
+import com.devwarex.chatapp.models.notification.MessageNotifyDataModel
 import com.devwarex.chatapp.util.MessageState
 import com.devwarex.chatapp.util.MessageType
 import com.devwarex.chatapp.util.Paths

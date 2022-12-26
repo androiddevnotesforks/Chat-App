@@ -1,6 +1,6 @@
 package com.devwarex.chatapp.ui.verify
 
-import com.devwarex.chatapp.models.CountryModel
+import com.devwarex.chatapp.models.country.CountryModel
 
 data class VerifyUiState(
     val sent: Boolean = false,

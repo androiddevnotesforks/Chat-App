@@ -51,7 +51,7 @@ class RegistrationActivity : ComponentActivity() {
                     modifier = Modifier
                         .background(MaterialTheme.colors.background)
                         .fillMaxSize()
-                ) { MainScreen() }
+                ) { RegistrationScreen() }
             }
         }
 
@@ -124,96 +124,6 @@ class RegistrationActivity : ComponentActivity() {
                 }
             }else{
                 Log.e("launcher","${result.resultCode}")
-            }
-        }
-    }
-}
-
-
-@Composable
-fun MainScreen(
-    viewModel: RegistrationViewModel = viewModel()
-){
-    Column(modifier = Modifier.verticalScroll(state = ScrollState(0))) {
-        Icon(
-            painter = painterResource(id = R.drawable.logo),
-            contentDescription = "app logo",
-            modifier = Modifier
-                .padding(top = 32.dp)
-                .align(CenterHorizontally)
-                .size(72.dp),
-            tint = MaterialTheme.colors.onSurface
-        )
-        Text(
-            text = stringResource(id = R.string.app_name),
-            color = MaterialTheme.colors.primary,
-            style = MaterialTheme.typography.h5,
-            modifier = Modifier
-                .align(CenterHorizontally)
-                .padding(top = 16.dp),
-            fontWeight = FontWeight.Bold
-
-        )
-        Spacer(modifier = Modifier.padding(top = 72.dp))
-        Button(
-            onClick = { viewModel.signInWithGoogle() },
-            elevation = ButtonDefaults.elevation(4.dp),
-            colors = ButtonDefaults.buttonColors(
-                backgroundColor = MaterialTheme.colors.surface
-            ),
-            modifier = Modifier.align(CenterHorizontally)
-        ) {
-            Row() {
-                Image(
-                    painter = painterResource(id = R.drawable.googleg_standard_color_18),
-                    contentDescription = "google icon"
-                )
-                Text(
-                    text = stringResource(id = R.string.google_sign_in_title),
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp)
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.padding(top = 72.dp))
-        Text(text = stringResource(id = R.string.or_title), modifier = Modifier.align(CenterHorizontally))
-        Spacer(modifier = Modifier.padding(top = 72.dp))
-        Button(
-            onClick = { viewModel.toSignIn() },
-            modifier = Modifier.align(CenterHorizontally)
-        ) {
-            Row() {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_email),
-                    contentDescription = "email sign in",
-                    tint = MaterialTheme.colors.onBackground
-                )
-                Text(
-                    text = stringResource(id = R.string.sign_in_title),
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp)
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.padding(top = 16.dp))
-        Button(
-            onClick = { viewModel.toSignUp() },
-            modifier = Modifier.align(CenterHorizontally),
-            colors = ButtonDefaults.buttonColors(
-                backgroundColor = MaterialTheme.colors.secondary
-            )
-        ) {
-            Row() {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_email),
-                    contentDescription = "email sign up",
-                    tint = LightBlack
-                )
-                Text(
-                    text = stringResource(id = R.string.sign_up_title),
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp),
-                    color = LightBlack
-                )
             }
         }
     }

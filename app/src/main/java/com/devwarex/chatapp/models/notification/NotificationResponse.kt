@@ -1,4 +1,4 @@
-package com.devwarex.chatapp.models
+package com.devwarex.chatapp.models.notification
 
 data class NotificationResponse(
     val multicast_id: Long,

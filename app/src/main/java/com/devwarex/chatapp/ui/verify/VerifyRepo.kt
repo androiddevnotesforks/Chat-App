@@ -1,7 +1,7 @@
 package com.devwarex.chatapp.ui.verify
 
 import com.devwarex.chatapp.api.CountriesService
-import com.devwarex.chatapp.models.CountryModel
+import com.devwarex.chatapp.models.country.CountryModel
 import com.devwarex.chatapp.repos.UserByIdRepo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

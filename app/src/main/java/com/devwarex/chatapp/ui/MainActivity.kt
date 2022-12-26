@@ -40,7 +40,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
                 ) {
-                    Screen()
+                    MainScreen()
                 }
             }
         }
@@ -52,58 +52,21 @@ class MainActivity : ComponentActivity() {
         } else {
             repo.getUserById(user.uid)
             lifecycleScope.launchWhenCreated {
-                launch { repo.user.receiveAsFlow().collect {
-                    if (it.verified && user.phoneNumber != null){
-                        val homeIntent = Intent(this@MainActivity, ChatsActivity::class.java)
-                        startActivity(homeIntent)
-                        finish()
-                    }else{
-                        val verifyIntent = Intent(this@MainActivity, VerifyActivity::class.java)
-                        startActivity(verifyIntent)
-                        finish()
+                launch {
+                    repo.user.receiveAsFlow().collect {
+                        if (it.verified && user.phoneNumber != null) {
+                            val homeIntent = Intent(this@MainActivity, ChatsActivity::class.java)
+                            startActivity(homeIntent)
+                            finish()
+                        } else {
+                            val verifyIntent = Intent(this@MainActivity, VerifyActivity::class.java)
+                            startActivity(verifyIntent)
+                            finish()
+                        }
                     }
-                } }
+                }
             }
         }
     }
 
 }
-    @Composable
-    fun Screen(modifier: Modifier = Modifier){
-
-        CustomLayout() {
-            Text(
-                text = stringResource(id = R.string.app_name),
-                color = MaterialTheme.colors.primary,
-                style = MaterialTheme.typography.h3,
-                modifier = modifier.wrapContentSize(),
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-
-
-
-    }
-
-    @Composable
-    fun CustomLayout(
-        modifier: Modifier = Modifier,
-        content: @Composable () -> Unit
-    ){
-        Layout(
-            modifier = modifier.fillMaxWidth(),
-            content = content
-        ){ measurables, constraints ->
-
-            val placeables = measurables.map { measurable ->
-                measurable.measure(constraints)
-            }
-
-            layout(constraints.maxWidth, constraints.maxHeight){
-                placeables.forEach { placeable ->
-                    placeable.placeRelative(x = 0, y = 0)
-                }
-            }
-        }
-    }

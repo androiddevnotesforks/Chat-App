@@ -4,8 +4,12 @@ import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import com.devwarex.chatapp.repos.UpdateTokenRepo
 import com.devwarex.chatapp.ui.signUp.ErrorsState
+import com.devwarex.chatapp.util.Paths
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
@@ -23,6 +27,8 @@ class SignInRepo @Inject constructor() {
     val uiState: StateFlow<SignInUiState> get() = _uiState
     private val auth = Firebase.auth
     val isSucceed = MutableLiveData(false)
+    private val coroutine = CoroutineScope(Dispatchers.Default)
+
     fun attemptToSignIn(elementsState: SignInUiState){
         _uiState.value = elementsState.copy(
             isLoading = true,
@@ -46,9 +52,14 @@ class SignInRepo @Inject constructor() {
                 if (task.isSuccessful){
                   val user = auth.currentUser
                   if (user  != null){
+                      updateUser(user)
                       UpdateTokenRepo.updateToken()
-                      _uiState.value = _uiState.value.copy(isLoading = false, isSucceed = true)
-                      isSucceed.value = true
+                      coroutine.launch {
+                          delay(300)
+                          _uiState.emit(
+                              value = _uiState.value.copy(isLoading = false, isSucceed = true)
+                          )
+                      }
                   }
                 }
             }.addOnFailureListener { e ->
@@ -68,4 +79,20 @@ class SignInRepo @Inject constructor() {
                 }
             }
     }
+
+    private fun updateUser(
+        user: FirebaseUser
+    ){
+        val db = Firebase.firestore
+        db.collection(Paths.USERS)
+            .document(user.uid)
+            .update(
+                "verified",false
+            ).addOnSuccessListener {
+                isSucceed.value = true
+            }
+
+    }
+
+    fun cancelJobs() = coroutine.cancel( )
 }

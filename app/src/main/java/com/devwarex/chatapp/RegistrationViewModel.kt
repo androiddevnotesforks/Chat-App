@@ -7,7 +7,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.devwarex.chatapp.models.UserModel
 import com.devwarex.chatapp.repos.UpdateTokenRepo
-import com.devwarex.chatapp.repos.UserByIdRepo
 import com.devwarex.chatapp.util.Paths
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.firebase.auth.GoogleAuthProvider
@@ -15,14 +14,13 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class RegistrationViewModel @Inject constructor(
-    private val userRepo: UserByIdRepo
-): ViewModel(){
+) : ViewModel() {
 
     private val _signIn = MutableLiveData<Boolean>()
     val signIn: LiveData<Boolean> get() = _signIn
@@ -33,60 +31,38 @@ class RegistrationViewModel @Inject constructor(
     private val _isSucceed = MutableLiveData(false)
     val isSucceed: LiveData<Boolean> get() = _isSucceed
 
-    fun toSignIn(){
+    fun toSignIn() {
         _signIn.value = true
     }
 
-    fun toSignUp(){
+    fun toSignUp() {
         _signUp.value = true
     }
 
-    fun signInWithGoogle(){
+    fun signInWithGoogle() {
         _googleSignIn.value = true
     }
-    fun clearListeners(){
+
+    fun clearListeners() {
         _signIn.value = false
         _signUp.value = false
         _googleSignIn.value = false
     }
 
 
-    fun signingWithGoogle(account: GoogleSignInAccount){
-        val credential = GoogleAuthProvider.getCredential(account.idToken,null)
+    fun signingWithGoogle(account: GoogleSignInAccount) {
+        val credential = GoogleAuthProvider.getCredential(account.idToken, null)
         Firebase.auth.signInWithCredential(credential)
             .addOnSuccessListener { task ->
-                if (task.user != null){
-                    userRepo.getUserById(uid = task.user?.uid!!)
+                if (task.user != null) {
                     viewModelScope.launch {
-                        userRepo.isFound.receiveAsFlow().collect {
-                            if(it){
-                                updateUser(uid = task.user?.uid!!,account = account)
-                            }else{
-                                saveUser(uid = task.user!!.uid, account = account)
-                            }
-                        }
+                        saveUser(uid = task.user!!.uid, account = account)
                     }
                 }
-
-            }.addOnFailureListener { Log.e("google",it.message!!) }
-
+            }.addOnFailureListener { Log.e("google", it.message!!) }
     }
 
-    private fun updateUser(uid: String,account: GoogleSignInAccount){
-        val db = Firebase.firestore
-        val name: String = account.displayName ?: ""
-        val img: String = account.photoUrl.toString()
-        db.collection(Paths.USERS)
-            .document(uid)
-            .update(
-                "name",name,
-                "img",img
-            ).addOnCompleteListener {
-                _isSucceed.value = it.isSuccessful
-                UpdateTokenRepo.updateToken()
-            }
-    }
-    private fun saveUser(uid: String,account: GoogleSignInAccount){
+    private fun saveUser(uid: String, account: GoogleSignInAccount) {
         val db = Firebase.firestore
         db.collection(Paths.USERS)
             .document(uid)
@@ -95,11 +71,15 @@ class RegistrationViewModel @Inject constructor(
                     uid = uid,
                     email = account.email ?: "",
                     name = account.displayName ?: "",
-                    img = account.photoUrl.toString()
+                    img = account.photoUrl.toString(),
+                    phone = Firebase.auth.currentUser?.phoneNumber ?: ""
                 )
             ).addOnCompleteListener {
-                _isSucceed.value = it.isSuccessful
                 UpdateTokenRepo.updateToken()
+                viewModelScope.launch {
+                    delay(300)
+                    _isSucceed.value = it.isSuccessful
+                }
             }
     }
 }

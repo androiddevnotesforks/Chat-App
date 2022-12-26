@@ -33,6 +33,7 @@ import com.google.firebase.auth.PhoneAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
@@ -45,6 +46,7 @@ class VerifyActivity : ComponentActivity() {
     private lateinit var mCredential: PhoneAuthCredential
     private lateinit var options: PhoneAuthOptions.Builder
     private lateinit var phoneNumberHintIntentResultLauncher: ActivityResultLauncher<IntentSenderRequest>
+    private val auth = Firebase.auth
     private val viewModel by viewModels<VerifyViewModel>()
 
     private val callbacks = object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
@@ -65,7 +67,7 @@ class VerifyActivity : ComponentActivity() {
             // This callback is invoked in an invalid request for verification is made,
             // for instance if the the phone number format is not valid.
             Log.e("TAG", "onVerificationFailed", e)
-            Log.e("sms","${e.message}")
+            Log.e("sms", "${e.message}")
             if (e is FirebaseAuthInvalidCredentialsException) {
                 // Invalid request
             } else if (e is FirebaseTooManyRequestsException) {
@@ -89,6 +91,7 @@ class VerifyActivity : ComponentActivity() {
             viewModel.onCodeSent()
         }
     }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -102,59 +105,69 @@ class VerifyActivity : ComponentActivity() {
             }
         }
         phoneNumberHintIntentResultLauncher = preparePhoneHintLauncher()
-        val phone =getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-        if (NetworkUtil.isMobileConnectedToInternet(this)){
+        val phone = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+        if (NetworkUtil.isMobileConnectedToInternet(this)) {
             var code: String? = phone.simCountryIso
             code = code ?: phone.networkCountryIso
             viewModel.getCountries()
             viewModel.getCountryCode(code ?: "eg")
-        }else{
-            Toast.makeText(this,getString(R.string.offline_message),Toast.LENGTH_LONG).show()
+        } else {
+            Toast.makeText(this, getString(R.string.offline_message), Toast.LENGTH_LONG).show()
         }
-        options = PhoneAuthOptions.newBuilder(Firebase.auth)
+        options = PhoneAuthOptions.newBuilder(auth)
             .setTimeout(60L, TimeUnit.SECONDS) // Timeout and unit
             .setActivity(this)                 // Activity (for callback binding)
             .setCallbacks(callbacks)          // OnVerificationStateChangedCallbacks
 
-        requestPhoneNumberHint()
+        if (auth.currentUser != null && auth.currentUser?.phoneNumber == null) {
+            requestPhoneNumberHint()
+        } else {
+            lifecycleScope.launch {
+                viewModel.setHintPhone(auth.currentUser?.phoneNumber ?: "")
+                viewModel.onRequestCode()
+            }
+        }
 
         lifecycleScope.launchWhenCreated {
             launch {
                 viewModel.uiState.collect {
-                    if (it.requestingCode && it.selectedCountry != null){
+                    Log.e("ui", it.copy().toString())
+                    if (it.requestingCode) {
+                        if (it.hintPhone.isNotEmpty()) {
+                            verifying(it.hintPhone)
+                        } else if (it.selectedCountry != null) {
                             verifying("${it.selectedCountry.idd.root}${it.selectedCountry.idd.suffixes[0]}${it.phone}")
+                        }
                     }
-
-                    if (it.verifying){
-                        viewModel.codeNumber.observe(this@VerifyActivity){ code ->
+                    if (it.verifying) {
+                        viewModel.codeNumber.observe(this@VerifyActivity) { code ->
                             verifyWithCredential(code = code)
                             viewModel.codeNumber.removeObservers(this@VerifyActivity)
                         }
                     }
                 }
             }
-
             launch { viewModel.isVerified.collect { updateUi(it) } }
         }
     }
 
-    private fun verifying(phone: String){
+    private fun verifying(phone: String) {
         options.setPhoneNumber(phone)
         PhoneAuthProvider.verifyPhoneNumber(options.build())
     }
 
-    private fun linkWithPhoneAuthCredential(){
-        Firebase.auth.currentUser!!.linkWithCredential(mCredential)
+    private fun linkWithPhoneAuthCredential() {
+        auth.currentUser!!.linkWithCredential(mCredential)
             .addOnCompleteListener { task ->
-                if (task.isSuccessful && task.result != null){
+                if (task.isSuccessful && task.result != null) {
                     viewModel.onSuccess()
                     viewModel.verifyAccount()
-                    Log.e("user","Verify!")
-                }else{
-                    Log.e("user","null")
+                    Log.e("user", "Verify!")
+                } else {
+                    Log.e("user", "null")
                 }
             }.addOnFailureListener {
-                when(it.message){
+                when (it.message) {
                     WRONG_CODE_MESSAGE -> {
                         viewModel.onWrongCode()
                         Toast.makeText(
@@ -172,7 +185,7 @@ class VerifyActivity : ComponentActivity() {
                         ).show()
                     }
                     ALREADY_LINKED -> signIn()
-                    else ->  Log.e("link","account: ${it.message}")
+                    else -> Log.e("link", "account: ${it.message}")
                 }
             }
     }
@@ -180,7 +193,7 @@ class VerifyActivity : ComponentActivity() {
     private fun preparePhoneHintLauncher(): ActivityResultLauncher<IntentSenderRequest> {
         return registerForActivityResult(
             ActivityResultContracts.StartIntentSenderForResult()
-        ){ result ->
+        ) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
                 try {
                     val phoneNumber = Identity.getSignInClient(this)
@@ -191,23 +204,25 @@ class VerifyActivity : ComponentActivity() {
                     println("Phone Number Hint failed")
                     e.printStackTrace()
                 }
-            }else{
-                Log.e("phone","cancelled")
+            } else {
+                Log.e("phone", "cancelled")
             }
         }
     }
 
-    private fun requestPhoneNumberHint(){
+    private fun requestPhoneNumberHint() {
         val request: GetPhoneNumberHintIntentRequest =
             GetPhoneNumberHintIntentRequest.builder().build()
         Identity.getSignInClient(this)
             .getPhoneNumberHintIntent(request)
             .addOnSuccessListener {
                 try {
-                    phoneNumberHintIntentResultLauncher.launch(IntentSenderRequest.Builder(
-                        it.intentSender
-                    ).build())
-                } catch(e: Exception) {
+                    phoneNumberHintIntentResultLauncher.launch(
+                        IntentSenderRequest.Builder(
+                            it.intentSender
+                        ).build()
+                    )
+                } catch (e: Exception) {
                     Log.e(ContentValues.TAG, "Launching the PendingIntent failed")
                 }
             }.addOnFailureListener {
@@ -215,8 +230,8 @@ class VerifyActivity : ComponentActivity() {
             }
     }
 
-    private fun signIn(){
-        Firebase.auth.signInWithCredential(mCredential)
+    private fun signIn() {
+        auth.signInWithCredential(mCredential)
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
                     // Sign in success, update UI with the signed-in user's information
@@ -227,30 +242,38 @@ class VerifyActivity : ComponentActivity() {
                     Log.w("sign_in", "signInWithCredential:failure", task.exception)
                     if (task.exception is FirebaseAuthInvalidCredentialsException) {
                         // The verification code entered was invalid
+                        viewModel.onWrongCode()
+                        Toast.makeText(
+                            this,
+                            getString(R.string.wrong_code),
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
                     // Update UI
                 }
             }
     }
 
-    private fun verifyWithCredential(code: String){
+    private fun verifyWithCredential(code: String) {
         if (storedVerificationId.isNotEmpty() && code.isNotBlank()) {
             mCredential = PhoneAuthProvider.getCredential(storedVerificationId, code)
             linkWithPhoneAuthCredential()
         }
     }
 
-    private fun updateUi(b: Boolean){
-        if (b){
+    private fun updateUi(b: Boolean) {
+        if (b) {
             val homeIntent = Intent(this, ChatsActivity::class.java)
             startActivity(homeIntent)
             finish()
         }
     }
 
-    companion object{
-        const val WRONG_CODE_MESSAGE: String = "The sms verification code used to create the phone auth credential is invalid. Please resend the verification code sms and be sure use the verification code provided by the user."
-        const val PHONE_LINKED_TO_ANOTHER_EMAIL_MESSAGE: String = "This credential is already associated with a different user account."
+    companion object {
+        const val WRONG_CODE_MESSAGE: String =
+            "The sms verification code used to create the phone auth credential is invalid. Please resend the verification code sms and be sure use the verification code provided by the user."
+        const val PHONE_LINKED_TO_ANOTHER_EMAIL_MESSAGE: String =
+            "This credential is already associated with a different user account."
         const val ALREADY_LINKED = "User has already been linked to the given provider."
     }
 

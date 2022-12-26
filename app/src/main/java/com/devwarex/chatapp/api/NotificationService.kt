@@ -1,8 +1,8 @@
 package com.devwarex.chatapp.api
 
 import com.devwarex.chatapp.BuildConfig
-import com.devwarex.chatapp.models.MessageNotificationModel
-import com.devwarex.chatapp.models.NotificationResponse
+import com.devwarex.chatapp.models.notification.MessageNotificationModel
+import com.devwarex.chatapp.models.notification.NotificationResponse
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.Headers

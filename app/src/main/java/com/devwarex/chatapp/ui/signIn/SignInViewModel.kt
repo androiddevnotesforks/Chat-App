@@ -29,6 +29,7 @@ class SignInViewModel @Inject constructor(
             }
         }
     }
+
     fun signIn(){
         repo.attemptToSignIn(_uiState.value)
     }
@@ -49,5 +50,10 @@ class SignInViewModel @Inject constructor(
                 errors = _uiState.value.copy().errors.copy(email = ErrorsState.NONE)
             )
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        repo.cancelJobs()
     }
 }

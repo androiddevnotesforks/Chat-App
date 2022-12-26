@@ -2,7 +2,7 @@ package com.devwarex.chatapp.repos
 
 import android.util.Log
 import com.devwarex.chatapp.api.NotificationClient
-import com.devwarex.chatapp.models.MessageNotificationModel
+import com.devwarex.chatapp.models.notification.MessageNotificationModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -21,6 +21,5 @@ class PushNotificationRepo {
                 Log.e("notification",e.message.toString())
             }
         }
-
     }
 }

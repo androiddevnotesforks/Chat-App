@@ -1,6 +1,6 @@
 package com.devwarex.chatapp.api
 
-import com.devwarex.chatapp.models.CountryModel
+import com.devwarex.chatapp.models.country.CountryModel
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Path

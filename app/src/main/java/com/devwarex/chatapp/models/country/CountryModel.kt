@@ -1,4 +1,4 @@
-package com.devwarex.chatapp.models
+package com.devwarex.chatapp.models.country
 
 data class CountryModel(
     val name: CountryNameModel,
