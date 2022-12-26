@@ -1,4 +1,4 @@
-package com.devwarex.chatapp.ui.conversation
+package com.devwarex.chatapp.repos
 
 import android.graphics.Bitmap
 import android.util.Log
@@ -22,7 +22,6 @@ class UploadImageRepo @Inject constructor() {
     private val storageRef = storage.reference
     val uploadProgress = MutableStateFlow(0)
     fun upload(bitmap: Bitmap){
-        uploadProgress.value = 1
         val frontImg = storageRef.child("chat_images/${user?.uid}_${Calendar.getInstance().time}.jpg")
         val baos = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.JPEG,50, baos)

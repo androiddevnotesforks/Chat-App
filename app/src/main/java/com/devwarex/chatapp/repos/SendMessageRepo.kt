@@ -99,6 +99,7 @@ class SendMessageRepo @Inject constructor() {
             }
             .addOnFailureListener { job.launch { isLoading.send(false) } }
     }
+
     fun sendImageMessage(
         chatId: String,
         uid: String,

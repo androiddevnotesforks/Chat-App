@@ -122,7 +122,11 @@ fun MainLayoutScreen(
                 }
                 .fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween) {
-                MessageEditText(modifier.weight(1f), viewModel = viewModel, text = uiState.text)
+                MessageEditText(
+                    modifier = modifier.weight(1f),
+                    viewModel = viewModel,
+                    text = uiState.text
+                )
                 if (uiState.text.isNotBlank()) {
                     FloatingActionButton(
                         onClick = { if (uiState.enable) viewModel.send() },
@@ -473,26 +477,23 @@ fun ImageMessageView(
     viewModel: MessagesViewModel,
     modifier: Modifier
 ) {
-    AlertDialog(
-        modifier = modifier
-            .wrapContentSize(),
-        backgroundColor = MaterialTheme.colors.onSurface.copy(alpha = 0f),
-        onDismissRequest = { viewModel.closePreviewImage() },
-        properties = DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = true),
-        text = {
-            Column(modifier = modifier.fillMaxWidth()) {
-                Image(
-                    painter = rememberAsyncImagePainter(model = img),
-                    contentDescription = "photo message",
-                    modifier = modifier
-                        .fillMaxWidth()
-                        .align(Alignment.CenterHorizontally),
-                    contentScale = ContentScale.Inside
-                )
-            }
-        },
-        buttons = {}
-    )
+    Dialog(
+        onDismissRequest = { viewModel.closePreviewImage() }
+    ) {
+        Column(
+            modifier = modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Image(
+                painter = rememberAsyncImagePainter(model = img),
+                contentDescription = "photo message",
+                modifier = modifier
+                    .fillMaxWidth()
+                    .align(Alignment.CenterHorizontally),
+                contentScale = ContentScale.Inside
+            )
+        }
+    }
 }
 
 @Composable
@@ -501,12 +502,12 @@ fun PreviewImageForSending(
     modifier: Modifier,
     viewModel: MessagesViewModel
 ) {
-    AlertDialog(
-        modifier = modifier.wrapContentSize(),
-        backgroundColor = MaterialTheme.colors.onSurface.copy(alpha = 0f),
-        onDismissRequest = { viewModel.closePreviewImageForSending() },
-        properties = DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = true),
-        text = {
+    Dialog(onDismissRequest = { viewModel.closePreviewImageForSending() }) {
+        Column(
+            modifier = modifier
+                .fillMaxWidth()
+                .background(color = MaterialTheme.colors.surface)
+        ) {
             Image(
                 bitmap = bitmap.asImageBitmap(),
                 contentDescription = "Preview image",
@@ -514,42 +515,39 @@ fun PreviewImageForSending(
                     .wrapContentSize(),
                 contentScale = ContentScale.Inside
             )
-        },
-        buttons = {
-            Column(modifier = modifier.fillMaxWidth()) {
-                val progress = viewModel.uploadProgress.collectAsState()
-                if (progress.value == 0) {
-                    FloatingActionButton(
-                        onClick = { viewModel.sendImage() },
-                        modifier = modifier
-                            .padding(all = 16.dp)
-                            .align(Alignment.End)
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_send),
-                            contentDescription = "send image"
-                        )
-                    }
-                } else {
-                    val animateProgress = animateFloatAsState(
-                        targetValue = progress.value.toFloat(),
-                        animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec
-                    )
-                    CircularProgressIndicator(
-                        modifier = modifier
-                            .padding(all = 16.dp)
-                            .align(Alignment.End),
-                        color = MaterialTheme.colors.secondary,
-                        progress = animateProgress.value / 100
+            val progress = viewModel.uploadProgress.collectAsState()
+            if (progress.value == 0) {
+                Button(
+                    onClick = { viewModel.sendImage() },
+                    modifier = modifier
+                        .padding(all = 16.dp)
+                        .align(Alignment.CenterHorizontally)
+                ) {
+                    Text(
+                        text = "Send Photo"
                     )
                 }
-                if (progress.value == 100) {
-                    viewModel.closePreviewImageForSending()
-                }
+            } else {
+                val animateProgress = animateFloatAsState(
+                    targetValue = progress.value.toFloat(),
+                    animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec
+                )
+                LinearProgressIndicator(
+                    modifier = modifier
+                        .padding(all = 16.dp)
+                        .fillMaxWidth()
+                        .align(Alignment.CenterHorizontally),
+                    color = MaterialTheme.colors.secondary,
+                    progress = animateProgress.value / 100
+                )
             }
-
+            if (progress.value == 100) {
+                viewModel.closePreviewImageForSending()
+            }
         }
-    )
+
+    }
+
 }
 
 @Composable
@@ -575,11 +573,13 @@ fun DeleteMessageDialog(
         buttons = {
             Row(
                 horizontalArrangement = Arrangement.End,
-                modifier = modifier.fillMaxWidth().padding(
-                    start = 16.dp,
-                    end = 16.dp,
-                    bottom = 16.dp
-                )
+                modifier = modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = 16.dp,
+                        end = 16.dp,
+                        bottom = 16.dp
+                    )
             ) {
                 TextButton(onClick = { viewModel.onDismissDeleteMessage() }) {
                     Text(text = "Cancel")

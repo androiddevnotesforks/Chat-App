@@ -7,6 +7,7 @@ import com.devwarex.chatapp.db.Message
 import com.devwarex.chatapp.models.LocationPin
 import com.devwarex.chatapp.models.UserModel
 import com.devwarex.chatapp.repos.SendMessageRepo
+import com.devwarex.chatapp.repos.UploadImageRepo
 import com.devwarex.chatapp.repos.UserByIdRepo
 import com.devwarex.chatapp.util.MessageState
 import com.devwarex.chatapp.util.Paths
