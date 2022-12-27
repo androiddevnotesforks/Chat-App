@@ -1,6 +1,5 @@
 package com.devwarex.chatapp.ui.conversation
 
-import android.graphics.Bitmap
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -114,22 +113,25 @@ fun MainLayoutScreen(
                     }
                 }
             }
-            Row(modifier = modifier
-                .constrainAs(edit) {
-                    end.linkTo(parent.end)
-                    start.linkTo(parent.start)
-                    bottom.linkTo(parent.bottom, margin = 4.dp)
-                }
-                .fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(
+                modifier = modifier
+                    .constrainAs(edit) {
+                        end.linkTo(parent.end)
+                        start.linkTo(parent.start)
+                        bottom.linkTo(parent.bottom, margin = 4.dp)
+                    }
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                val inputState = viewModel.inputState.collectAsState().value
                 MessageEditText(
                     modifier = modifier.weight(1f),
                     viewModel = viewModel,
-                    text = uiState.text
+                    text = inputState.text
                 )
-                if (uiState.text.isNotBlank()) {
+                if (inputState.text.isNotBlank()) {
                     FloatingActionButton(
-                        onClick = { if (uiState.enable) viewModel.send() },
+                        onClick = { if (!inputState.isLoading) viewModel.send() },
                         modifier = modifier
                             .padding(end = 8.dp)
                             .align(alignment = Alignment.CenterVertically),
@@ -158,9 +160,8 @@ fun MainLayoutScreen(
         }
     }
     val uiState = viewModel.uiState.collectAsState().value
-    if (uiState.previewBeforeSending && uiState.bitmap != null) {
+    if (uiState.previewBeforeSending) {
         PreviewImageForSending(
-            bitmap = uiState.bitmap,
             viewModel = viewModel,
             modifier = modifier
         )
@@ -194,8 +195,8 @@ fun MainLayoutScreen(
 @Composable
 fun MessageEditText(
     modifier: Modifier,
-    text: String,
-    viewModel: MessagesViewModel
+    viewModel: MessagesViewModel,
+    text: String
 ) {
     TextField(
         value = text,
@@ -498,23 +499,23 @@ fun ImageMessageView(
 
 @Composable
 fun PreviewImageForSending(
-    bitmap: Bitmap,
     modifier: Modifier,
     viewModel: MessagesViewModel
 ) {
     Dialog(onDismissRequest = { viewModel.closePreviewImageForSending() }) {
         Column(
             modifier = modifier
-                .fillMaxWidth()
                 .background(color = MaterialTheme.colors.surface)
+                .verticalScroll(state = rememberScrollState())
         ) {
-            Image(
-                bitmap = bitmap.asImageBitmap(),
-                contentDescription = "Preview image",
-                modifier = modifier
-                    .wrapContentSize(),
-                contentScale = ContentScale.Inside
-            )
+            val image = viewModel.inputState.collectAsState().value.bitmap
+            if (image != null) {
+                Image(
+                    bitmap = image.asImageBitmap(),
+                    contentDescription = "Preview image",
+                    contentScale = ContentScale.Inside
+                )
+            }
             val progress = viewModel.uploadProgress.collectAsState()
             if (progress.value == 0) {
                 Button(
@@ -545,7 +546,6 @@ fun PreviewImageForSending(
                 viewModel.closePreviewImageForSending()
             }
         }
-
     }
 
 }

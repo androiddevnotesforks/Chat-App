@@ -19,13 +19,33 @@ class MessagesViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _locationUiState = MutableStateFlow(LocationUiState())
+    private val _inputState = MutableStateFlow(ConversationInputState())
+    val inputState: StateFlow<ConversationInputState> = _inputState
     val uiState: StateFlow<MessageUiState> get() = repo.uiState
     val locationUiState: StateFlow<LocationUiState> = _locationUiState
     val shouldFetchChat: Flow<Boolean> get() = repo.shouldFetchChat.receiveAsFlow()
-    private var isSent = false
     private val _insert = MutableLiveData<Boolean>()
     val insert: LiveData<Boolean> get() = _insert
     val uploadProgress: StateFlow<Int> get() = repo.uploadProgress
+
+    init {
+        viewModelScope.launch {
+            repo.isSendingMessage.collect {
+                _inputState.emit(
+                    value = _inputState.value.copy(
+                        isLoading = it,
+                        text = if (it) _inputState.value.text else "",
+                        bitmap = if (it) _inputState.value.bitmap else null
+                    )
+                )
+                repo.uiState.emit(
+                    value = repo.uiState.value.copy(
+                        previewBeforeSending = _inputState.value.bitmap != null
+                    )
+                )
+            }
+        }
+    }
 
     fun sync(chatId: String) {
         if (chatId.isBlank()) return
@@ -34,15 +54,14 @@ class MessagesViewModel @Inject constructor(
 
     fun setText(s: String) = viewModelScope.launch {
         repo.setTypingState(s.isNotEmpty())
-        if (!repo.uiState.value.isLoading) {
-            repo.uiState.emit(value = repo.uiState.value.copy(text = s))
+        if (!_inputState.value.isLoading) {
+            _inputState.emit(value = _inputState.value.copy(text = s))
         }
     }
 
     fun send() {
-        if (uiState.value.text.isNotBlank()) {
-            repo.send(MessageUtility.filterText(uiState.value.text))
-            isSent = true
+        if (_inputState.value.text.isNotBlank()) {
+            repo.send(MessageUtility.filterText(_inputState.value.text))
         }
     }
 
@@ -60,7 +79,12 @@ class MessagesViewModel @Inject constructor(
     fun setBitmap(
         bitmap: Bitmap
     ) = viewModelScope.launch {
-        repo.uiState.emit(repo.uiState.value.copy(bitmap = bitmap, previewBeforeSending = true))
+        _inputState.emit(
+            value = _inputState.value.copy(bitmap = bitmap)
+        )
+        repo.uiState.emit(
+            value = repo.uiState.value.copy(previewBeforeSending = _inputState.value.bitmap != null)
+        )
     }
 
     fun insertPhoto() = viewModelScope.launch {
@@ -78,8 +102,11 @@ class MessagesViewModel @Inject constructor(
     }
 
     fun closePreviewImageForSending() = viewModelScope.launch {
+        _inputState.emit(
+            value = _inputState.value.copy(bitmap = null)
+        )
         repo.uiState.emit(
-            value = repo.uiState.value.copy(previewBeforeSending = false, bitmap = null)
+            value = repo.uiState.value.copy(previewBeforeSending = _inputState.value.bitmap != null)
         )
         repo.zeroProgress()
     }
@@ -91,8 +118,8 @@ class MessagesViewModel @Inject constructor(
     }
 
     fun sendImage() {
-        if (repo.uiState.value.bitmap != null) {
-            repo.sendImage(repo.uiState.value.bitmap!!)
+        if (_inputState.value.bitmap != null) {
+            repo.sendImage(_inputState.value.bitmap!!)
         }
     }
 

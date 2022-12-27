@@ -21,6 +21,7 @@ import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import javax.inject.Inject
 
@@ -42,6 +43,7 @@ class ConversationRepo @Inject constructor(
     private val coroutine = CoroutineScope(Dispatchers.Unconfined)
     private var isRemoteDbLaunched = false
     val uploadProgress = uploadImageRepo.uploadProgress
+    val isSendingMessage: StateFlow<Boolean> = sendMessageRepo.isLoading
 
     fun sync(id: String) {
         currentUid = Firebase.auth.uid ?: ""
@@ -54,8 +56,7 @@ class ConversationRepo @Inject constructor(
                     uiState.emit(
                         value = uiState.value.copy(
                             uid = currentUid,
-                            messages = it,
-                            isLoading = false
+                            messages = it
                         )
                     )
                     checkForUnDeliveredMessages(it)
@@ -86,19 +87,6 @@ class ConversationRepo @Inject constructor(
 
     init {
         coroutine.launch {
-            launch {
-                sendMessageRepo.isLoading.receiveAsFlow()
-                    .collect {
-                        uiState.emit(
-                            value = uiState.value.copy(
-                                isLoading = it,
-                                enable = !it,
-                                text = if (!it) "" else uiState.value.text
-                            )
-                        )
-                        setTypingState(it)
-                    }
-            }
             launch { userRepo.token.receiveAsFlow().collect { token = it } }
             launch { userRepo.user.receiveAsFlow().collect { currentUser = it } }
             launch {
@@ -121,7 +109,7 @@ class ConversationRepo @Inject constructor(
                 if (it){
                     val messageId = uiState.value.deleteMessageId
                     database.deleteMessage(messageId)
-                    delay(200)
+                    delay(50)
                     uiState.emit(
                         value = uiState.value.copy(deleteMessageId = "")
                     )
@@ -229,6 +217,7 @@ class ConversationRepo @Inject constructor(
         dbRef.removeEventListener(availabilityListener)
         dbRef.removeEventListener(typingListener)
         coroutine.cancel()
+        sendMessageRepo.cancelJob()
     }
 
     fun setAvailability(b: Boolean) {

@@ -10,17 +10,14 @@ import com.devwarex.chatapp.util.Paths
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 class SendMessageRepo @Inject constructor() {
     private val db = Firebase.firestore
-    val isLoading = Channel<Boolean>()
+    val isLoading = MutableStateFlow(false)
     val isDeleted = MutableStateFlow(false)
     private val job = CoroutineScope(Dispatchers.Unconfined)
 
@@ -31,8 +28,8 @@ class SendMessageRepo @Inject constructor() {
         name: String,
         token: String,
         availability: Boolean
-    ){
-        job.launch { isLoading.send(true) }
+    ) {
+        job.launch { isLoading.emit(true) }
         db.collection(Paths.MESSAGES)
             .add(
                 MessageModel(
@@ -43,8 +40,10 @@ class SendMessageRepo @Inject constructor() {
                     chatId = chatId,
                     state = MessageState.SENT
                 )
-            ).addOnCompleteListener { job.launch {
-                isLoading.send(!it.isSuccessful) }
+            ).addOnCompleteListener {
+                job.launch {
+                    isLoading.emit(!it.isSuccessful)
+                }
                 updateLastMessage(chatId = chatId, lastMessage = text)
                 if (token.isNotEmpty() && !availability) {
                     PushNotificationRepo.push(
@@ -58,7 +57,8 @@ class SendMessageRepo @Inject constructor() {
                         )
                     )
                 }
-            }.addOnFailureListener { job.launch { isLoading.send(false) } }
+                isLoading.value = false
+            }.addOnFailureListener { job.launch { isLoading.emit(false) } }
     }
 
 
@@ -69,8 +69,8 @@ class SendMessageRepo @Inject constructor() {
         name: String,
         token: String,
         availability: Boolean
-    ){
-        job.launch { isLoading.send(true) }
+    ) {
+        job.launch { isLoading.emit(true) }
         db.collection(Paths.MESSAGES)
             .add(
                 MessageModel(
@@ -81,8 +81,10 @@ class SendMessageRepo @Inject constructor() {
                     chatId = chatId,
                     state = MessageState.SENT
                 )
-            ).addOnCompleteListener { job.launch {
-                isLoading.send(!it.isSuccessful) }
+            ).addOnCompleteListener {
+                job.launch {
+                    isLoading.emit(!it.isSuccessful)
+                }
                 updateLastMessage(chatId = chatId, lastMessage = "location_pin")
                 if (token.isNotEmpty() && !availability) {
                     PushNotificationRepo.push(
@@ -96,8 +98,8 @@ class SendMessageRepo @Inject constructor() {
                         )
                     )
                 }
-            }
-            .addOnFailureListener { job.launch { isLoading.send(false) } }
+                isLoading.value = false
+            }.addOnFailureListener { job.launch { isLoading.emit(false) } }
     }
 
     fun sendImageMessage(
@@ -107,8 +109,8 @@ class SendMessageRepo @Inject constructor() {
         name: String,
         token: String,
         availability: Boolean
-    ){
-        job.launch { isLoading.send(true) }
+    ) {
+        job.launch { isLoading.emit(true) }
         db.collection(Paths.MESSAGES)
             .add(
                 MessageModel(
@@ -119,8 +121,10 @@ class SendMessageRepo @Inject constructor() {
                     chatId = chatId,
                     state = MessageState.SENT
                 )
-            ).addOnCompleteListener { job.launch {
-                isLoading.send(!it.isSuccessful) }
+            ).addOnCompleteListener {
+                job.launch {
+                    isLoading.emit(!it.isSuccessful)
+                }
                 updateLastMessage(chatId = chatId, lastMessage = "IMAGE")
                 if (token.isNotEmpty() && !availability) {
                     PushNotificationRepo.push(
@@ -134,34 +138,37 @@ class SendMessageRepo @Inject constructor() {
                         )
                     )
                 }
-            }
-            .addOnFailureListener { job.launch { isLoading.send(false) } }
+                isLoading.value = false
+            }.addOnFailureListener { job.launch { isLoading.emit(false) } }
     }
 
-    fun updateMessageState(id: String){
+    fun updateMessageState(id: String) {
         db.collection(Paths.MESSAGES)
             .document(id)
-            .update("state",MessageState.DELIVERED)
-            .addOnCompleteListener {  }
+            .update("state", MessageState.DELIVERED)
+            .addOnCompleteListener { }
     }
 
-    private fun updateLastMessage(chatId: String,lastMessage: String){
+    private fun updateLastMessage(chatId: String, lastMessage: String) {
         db.collection(Paths.CHATS)
             .document(chatId).update(
-                "lastMessage",lastMessage,
-                "lastEdit",FieldValue.serverTimestamp()
-            ).addOnCompleteListener {  }
+                "lastMessage", lastMessage,
+                "lastEdit", FieldValue.serverTimestamp()
+            ).addOnCompleteListener { }
     }
 
-    fun deleteMessage(messageId: String){
+    fun deleteMessage(messageId: String) {
         db.collection(Paths.MESSAGES)
             .document(messageId)
             .delete().addOnSuccessListener {
                 job.launch {
                     isDeleted.emit(true)
-                    delay(200)
+                    delay(100)
                     isDeleted.value = false
                 }
             }
     }
+
+    fun cancelJob() = job.cancel()
+
 }
